@@ -2,6 +2,7 @@ module Dynamini
   require 'active_model'
   require 'dynamini/base'
   require 'dynamini/configuration'
+  require 'dynamini/test_client'
 
   class << self
     attr_writer :configuration
@@ -15,11 +16,3 @@ module Dynamini
     yield(configuration)
   end
 end
-
-
-
-# Dynamini.configure do |config|
-#   config.aws_region = 'eu-west-1'
-#   config.access_key_id =
-#   config.secret_access_key =
-# end

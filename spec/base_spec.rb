@@ -1,26 +1,25 @@
 require 'spec_helper'
 
-describe '.client' do
-  let(:client) { instance_double(Aws::DynamoDB::Client) }
-
-  it 'should create the client only once' do
-    expect(Aws::DynamoDB::Client).to receive(:new).with(
-                                         region: Dynamini.configuration.region,
-                                         access_key_id: Dynamini.configuration.access_key_id,
-                                         secret_access_key: Dynamini.configuration.secret_access_key).once.and_return(client)
-    Dynamini::Base.client
-    Dynamini::Base.client
-  end
-end
+# describe '.client' do
+#   let(:client) { instance_double(Aws::DynamoDB::Client) }
+#
+#   it 'should create the client only once' do
+#     expect(Aws::DynamoDB::Client).to receive(:new).with(
+#                                          region: Dynamini.configuration.region,
+#                                          access_key_id: Dynamini.configuration.access_key_id,
+#                                          secret_access_key: Dynamini.configuration.secret_access_key).once.and_return(client)
+#     Dynamini::Base.client
+#     Dynamini::Base.client
+#   end
+# end
 
 describe Dynamini::Base do
-  let(:client) { instance_double(Aws::DynamoDB::Client) }
   let(:model_attributes) { {name: 'Widget', price: 9.99, id: 'abcd1234'} }
 
   subject(:model) { Dynamini::Base.new(model_attributes).tap { |model| model.send(:clear_changes) } }
 
   before do
-    allow(Dynamini::Base).to receive(:client).and_return(client)
+    Dynamini::Base.in_memory = true
   end
 
   describe '#configure' do
@@ -37,6 +36,7 @@ describe Dynamini::Base do
 
   describe 'operations' do
 
+
     describe '.new' do
       let(:dirty_model) { Dynamini::Base.new(model_attributes) }
 
@@ -50,15 +50,12 @@ describe Dynamini::Base do
     end
 
     describe '.create' do
-      it 'should call put_item' do
-        expect(client).to receive(:update_item).with(table_name: 'bases',
-                                                     key: {id: model_attributes[:id]},
-                                                     attribute_updates: hash_including({name: {value: 'Widget', action: 'PUT'}, price: {value: 9.99, action: 'PUT'}}))
+      it 'should save the item' do
         Dynamini::Base.create(model_attributes)
+        expect(Dynamini::Base.find(model_attributes[:id])).to_not be_nil
       end
 
       it 'should return an instance of the model' do
-        allow(client).to receive(:update_item)
         expect(Dynamini::Base.create(model_attributes).attributes).to eq(model_attributes)
       end
 
@@ -67,30 +64,21 @@ describe Dynamini::Base do
         end
 
         it 'should return the object as an instance of the subclass' do
-          allow(client).to receive(:update_item)
           expect(Foo.create(value: '1')).to be_a Foo
         end
       end
     end
 
     describe '.find' do
-      let(:response) { double(:get_response, item: model_attributes.stringify_keys) }
-
-      it 'should call get_item' do
-        expect(client).to receive(:get_item).with(table_name: 'bases', key: {id: model_attributes[:id]}).and_return response
-        Dynamini::Base.find('abcd1234')
-      end
 
       it 'should return a model with the retrieved attributes' do
-        allow(client).to receive(:get_item).and_return(response)
+        Dynamini::Base.create(model_attributes)
         expect(Dynamini::Base.find('abcd1234').attributes).to eq(model_attributes)
       end
 
       context 'when the object does not exist' do
-        let(:response) { double(:empty_response, item: nil) }
 
         it 'should raise an error' do
-          allow(client).to receive(:get_item).and_return(response)
           expect { Dynamini::Base.find('foo') }.to raise_error 'Item not found.'
         end
 
@@ -98,10 +86,11 @@ describe Dynamini::Base do
 
       context 'when retrieving a subclass' do
         class Foo < Dynamini::Base
+          self.in_memory = true
         end
 
         it 'should return the object as an instance of the subclass' do
-          allow(client).to receive(:get_item).and_return(response)
+          Foo.create({id: '1'})
           expect(Foo.find('1')).to be_a Foo
         end
       end
@@ -170,15 +159,10 @@ describe Dynamini::Base do
 
     describe '.dynamo_batch_save' do
       it 'should batch write the models to dynamo' do
-        model2 = Dynamini::Base.new(id: 123)
-
-        expect(client).to receive(:batch_write_item).with({request_items: {
-                                                              'bases' => [
-                                                                  {put_request: {item: hash_including(model_attributes.stringify_keys)}},
-                                                                  {put_request: {item: hash_including(model2.attributes.stringify_keys)}}
-                                                              ]
-                                                          }})
+        model2 = Dynamini::Base.create(id: '123')
         Dynamini::Base.dynamo_batch_save([model, model2])
+        expect(Dynamini::Base.find('123')).to_not be_nil
+        expect(Dynamini::Base.find(model.id)).to_not be_nil
       end
     end
 
@@ -190,13 +174,12 @@ describe Dynamini::Base do
       end
       context 'when requesting 2 items' do
         it 'should return a 2-length array containing each item' do
-          model2 = Dynamini::Base.new(id: 4321)
-          response = OpenStruct.new(responses: {'bases' => [model, model2]})
-          expect(client).to receive(:batch_get_item).and_return response
-          items = Dynamini::Base.batch_find(['foo', 'bar'])
-          expect(items.length).to eq 2
-          expect(items.first.id).to eq model.id
-          expect(items.last.id).to eq 4321
+          model.save
+          Dynamini::Base.create(id: '4321')
+          objects = Dynamini::Base.batch_find(['abcd1234', '4321'])
+          expect(objects.length).to eq 2
+          expect(objects.first.id).to eq model.id
+          expect(objects.last.id).to eq '4321'
         end
       end
       context 'when requesting too many items' do
@@ -209,17 +192,14 @@ describe Dynamini::Base do
     end
 
     describe '.find_or_new' do
-      let(:response) { double(:get_response, item: model_attributes.stringify_keys) }
-      let(:empty_response) { Dynamini::Base.new() }
       context 'when a record with the given key exists' do
         it 'should return that record' do
-          allow(client).to receive(:get_item).and_return(response)
-          expect(Dynamini::Base.find_or_new('abcd1234').new_record?).to be_falsey
+          model.save
+          expect(Dynamini::Base.find_or_new(model.id).new_record?).to be_falsey
         end
       end
       context 'when the key cannot be found' do
         it 'should initialize a new object with that key' do
-          allow(client).to receive(:get_item).and_return(empty_response)
           expect(Dynamini::Base.find_or_new('foo').new_record?).to be_truthy
         end
       end
@@ -232,7 +212,6 @@ describe Dynamini::Base do
       end
 
       it 'should update the attributes of the model' do
-        allow(client).to receive(:update_item)
         model.assign_attributes(price: 5)
         expect(model.attributes[:price]).to eq(5)
       end
@@ -244,9 +223,6 @@ describe Dynamini::Base do
     end
 
     describe '#save' do
-      before do
-        allow(client).to receive(:update_item)
-      end
 
       context 'when passing validation' do
         it 'should return true' do
@@ -255,7 +231,7 @@ describe Dynamini::Base do
 
         context 'something has changed' do
           it 'should call update_item with the changed attributes' do
-            expect(client).to receive(:update_item).with(table_name: 'bases',
+            expect(model.class.client).to receive(:update_item).with(table_name: 'bases',
                                                          key: {id: model_attributes[:id]},
                                                          attribute_updates: hash_including({price: {value: 5, action: 'PUT'}}))
             model.price = 5
@@ -271,7 +247,7 @@ describe Dynamini::Base do
 
         context 'when a blank field has been added' do
           it 'should suppress any blank keys' do
-            expect(client).to receive(:update_item).with(table_name: 'bases',
+            expect(model.class.client).to receive(:update_item).with(table_name: 'bases',
                                                          key: {id: model_attributes[:id]},
                                                          attribute_updates: hash_not_including({foo: {value: '', action: 'PUT'}}))
             model.foo = ''
@@ -291,21 +267,20 @@ describe Dynamini::Base do
         end
 
         it 'should not trigger an update' do
-          expect(client).not_to receive(:update_item)
+          expect(model.class.client).not_to receive(:update_item)
           model.save
         end
       end
 
       context 'nothing has changed' do
         it 'should not trigger an update' do
-          expect(client).not_to receive(:update_item)
+          expect(model.class.client).not_to receive(:update_item)
           model.save
         end
       end
 
       context 'when validation is ignored' do
         it 'should trigger an update' do
-          allow(client).to receive(:update_item)
           allow(model).to receive(:valid?).and_return(false)
           model.price = 5
           expect(model.save!(validate: false)).to eq true
@@ -318,7 +293,7 @@ describe Dynamini::Base do
   describe '#touch' do
     it 'should only send the updated time timestamp to the client' do
       allow(Time).to receive(:now).and_return 1
-      expect(client).to receive(:update_item).with(table_name: 'bases',
+      expect(model.class.client).to receive(:update_item).with(table_name: 'bases',
                                                    key: {id: model_attributes[:id]},
                                                    attribute_updates: {updated_at: {value: 1.0, action: 'PUT'}})
       expect { model.touch }.to raise_error RuntimeError
@@ -331,6 +306,7 @@ describe Dynamini::Base do
     class TestValidation < Dynamini::Base
       self.hash_key = :bar
       validates_presence_of :foo
+      self.in_memory = true
     end
 
     it 'should raise its failed validation errors' do
@@ -339,7 +315,6 @@ describe Dynamini::Base do
     end
 
     it 'should not validate if validate: false is passed' do
-      allow(client).to receive(:update_item)
       model = TestValidation.new(bar: 'baz')
       expect(model.save!(validate: false)).to eq true
     end
@@ -363,34 +338,28 @@ describe Dynamini::Base do
     end
     context 'new record' do
       it 'should set created and updated time to current time' do
-        expect(client).to receive(:update_item).with(table_name: 'bases',
-                                                     key: {id: model_attributes[:id]},
-                                                     attribute_updates: {price: {value: 5, action: 'PUT'},
-                                                                         created_at: {value: time.to_f, action: 'PUT'},
-                                                                         updated_at: {value: time.to_f, action: 'PUT'}})
         model.price = 5
         model.save
+        expect(model.created_at).to eq(time.to_f)
+        expect(model.updated_at).to eq(time.to_f)
       end
     end
     context 'existing record' do
       it 'should set updated time but not created time' do
-        expect(client).to receive(:update_item).with(table_name: 'bases',
-                                                     key: {id: model_attributes[:id]},
-                                                     attribute_updates: {price: {value: 5, action: 'PUT'},
-                                                                         updated_at: {value: time.to_f, action: 'PUT'}})
         model.instance_variable_set(:@new_record, false)
         model.price = 5
         model.save
+        expect(model.updated_at).to eq(time.to_f)
+        expect(model.created_at).to_not eq(time.to_f)
       end
     end
     context 'when suppressing timestamps' do
       it 'should not set either timestamp' do
-        expect(client).to receive(:update_item).with(table_name: 'bases',
-                                                     key: {id: model_attributes[:id]},
-                                                     attribute_updates: {price: {value: 5, action: 'PUT'}})
         model.instance_variable_set(:@new_record, false)
         model.price = 5
         model.save(skip_timestamps: true)
+        expect(model.updated_at).to_not eq(time.to_f)
+        expect(model.created_at).to_not eq(time.to_f)
       end
     end
 
@@ -423,16 +392,14 @@ describe Dynamini::Base do
 
     describe '#new_record?' do
 
-      let(:response) { double(:get_response, item: model_attributes.stringify_keys) }
       it 'should return true for a new record' do
         expect(model.new_record?).to be_truthy
       end
       it 'should return false for a retrieved record' do
-        allow(client).to receive(:get_item).and_return(response)
+        model.save
         expect(Dynamini::Base.find('abcd1234').new_record?).to be_falsey
       end
       it 'should return false after a new record is saved' do
-        allow(client).to receive(:update_item).and_return(response)
         model.foo = 'bar'
         model.save
         expect(model.new_record?).to be_falsey

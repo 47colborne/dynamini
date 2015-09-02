@@ -6,7 +6,7 @@ module Dynamini
     BATCH_SIZE = 25
 
     class << self
-      attr_writer :hash_key, :table_name, :batch_write_queue
+      attr_writer :hash_key, :table_name, :batch_write_queue, :in_memory
 
       def table_name
         @table_name || name.demodulize.downcase.pluralize
@@ -16,15 +16,23 @@ module Dynamini
         @hash_key || :id
       end
 
+      def in_memory
+        @in_memory || false
+      end
+
       def batch_write_queue
         @batch_write_queue ||= []
       end
 
       def client
-        @client ||= Aws::DynamoDB::Client.new(
-            region: Dynamini.configuration.region,
-            access_key_id: Dynamini.configuration.access_key_id,
-            secret_access_key: Dynamini.configuration.secret_access_key)
+        if in_memory
+          @client ||= Dynamini::TestClient.new(hash_key)
+        else
+          @client ||= Aws::DynamoDB::Client.new(
+              region: Dynamini.configuration.region,
+              access_key_id: Dynamini.configuration.access_key_id,
+              secret_access_key: Dynamini.configuration.secret_access_key)
+        end
       end
 
       def create(attributes, options={})
@@ -54,10 +62,14 @@ module Dynamini
 
       def batch_find(ids = [])
         return [] if ids.length < 1
+        objects = []
         raise StandardError, 'Batch find is limited to 100 items' if ids.length > 100
         key_structure = ids.map { |i| {hash_key => i} }
         response = self.dynamo_batch_get(key_structure)
-        response.responses[table_name]
+        response.responses[table_name].each do |item|
+          objects << self.new(item.symbolize_keys, false)
+        end
+        objects
       end
 
       def enqueue_for_save(attributes, options = {})
@@ -158,11 +170,11 @@ module Dynamini
     end
 
     def save_to_dynamo
-      Base.client.update_item(table_name: self.class.table_name, key: key, attribute_updates: attribute_updates)
+      self.class.client.update_item(table_name: self.class.table_name, key: key, attribute_updates: attribute_updates)
     end
 
     def touch_to_dynamo
-      Base.client.update_item(table_name: self.class.table_name, key: key, attribute_updates: {updated_at: {value: updated_at, action: 'PUT'}})
+      self.class.client.update_item(table_name: self.class.table_name, key: key, attribute_updates: {updated_at: {value: updated_at, action: 'PUT'}})
     end
 
     def self.dynamo_batch_get(key_structure)

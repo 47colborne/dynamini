@@ -232,7 +232,6 @@ module Dynamini
     end
 
     def write_attribute(attribute, new_value)
-      raise StandardError, 'Cannot edit hash key, create a new object instead.' if attribute == self.class.hash_key
       old_value = @attributes[attribute]
       @attributes[attribute] = new_value
       record_change(attribute, new_value, old_value)

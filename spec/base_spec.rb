@@ -1,22 +1,11 @@
 require 'spec_helper'
 
-# describe '.client' do
-#   let(:client) { instance_double(Aws::DynamoDB::Client) }
-#
-#   it 'should create the client only once' do
-#     expect(Aws::DynamoDB::Client).to receive(:new).with(
-#                                          region: Dynamini.configuration.region,
-#                                          access_key_id: Dynamini.configuration.access_key_id,
-#                                          secret_access_key: Dynamini.configuration.secret_access_key).once.and_return(client)
-#     Dynamini::Base.client
-#     Dynamini::Base.client
-#   end
-# end
 
 describe Dynamini::Base do
   let(:model_attributes) { {name: 'Widget', price: 9.99, id: 'abcd1234'} }
 
   subject(:model) { Dynamini::Base.new(model_attributes).tap { |model| model.send(:clear_changes) } }
+
 
   before do
     Dynamini::Base.in_memory = true
@@ -31,6 +20,15 @@ describe Dynamini::Base do
 
     it 'returns the configured variables' do
       expect(Dynamini.configuration.region).to eq('eu-west-1')
+    end
+  end
+
+  describe '.client' do
+    it 'should create the client only once' do
+      expect(Dynamini::TestClient).to receive(:new).once.and_return(1)
+      Dynamini::Base.client
+      Dynamini::Base.client
+      Dynamini::Base.instance_variable_set(:@client, nil)
     end
   end
 
@@ -439,12 +437,6 @@ describe Dynamini::Base do
 
     describe 'writer method' do
       it { is_expected.to respond_to(:baz=) }
-
-      context 'attempting to write to hash_key' do
-        it 'should raise an error' do
-          expect { model.id = 1 }.to raise_error StandardError
-        end
-      end
 
       context 'existing attribute' do
         before { model.price = 1 }

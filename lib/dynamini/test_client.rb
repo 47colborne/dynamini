@@ -48,6 +48,10 @@ module Dynamini
       end
     end
 
+    def reset
+      @data = {}
+    end
+
     private
 
     def flatten_attribute_updates(attribute_updates)

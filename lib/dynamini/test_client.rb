@@ -21,7 +21,6 @@ module Dynamini
       attributes_hash = @data[args[:table_name]][args[:key][hash_key]]
       item = attributes_hash.nil? ? nil : attributes_hash
       OpenStruct.new(item: item)
-
     end
 
     def batch_get_item(args = {})

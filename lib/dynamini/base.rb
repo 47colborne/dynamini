@@ -51,6 +51,11 @@ module Dynamini
         self.new(response.item.symbolize_keys, false)
       end
 
+      def exists?(key)
+        return true if client.get_item(table_name: table_name, key: {hash_key => key.to_s})
+        false
+      end
+
       def find_or_new(key)
         response = client.get_item(table_name: table_name, key: {hash_key => key})
         if response.item

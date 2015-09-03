@@ -46,7 +46,7 @@ module Dynamini
       end
 
       def find(key)
-        response = client.get_item(table_name: table_name, key: {hash_key => key})
+        response = client.get_item(table_name: table_name, key: {hash_key => key.to_s})
         raise 'Item not found.' unless response.item
         self.new(response.item.symbolize_keys, false)
       end
@@ -64,7 +64,7 @@ module Dynamini
         return [] if ids.length < 1
         objects = []
         raise StandardError, 'Batch find is limited to 100 items' if ids.length > 100
-        key_structure = ids.map { |i| {hash_key => i} }
+        key_structure = ids.map { |i| {hash_key => i.to_s} }
         response = self.dynamo_batch_get(key_structure)
         response.responses[table_name].each do |item|
           objects << self.new(item.symbolize_keys, false)

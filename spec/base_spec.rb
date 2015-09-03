@@ -11,6 +11,7 @@ describe Dynamini::Base do
     Dynamini::Base.in_memory = true
   end
 
+
   describe '#configure' do
     before do
       Dynamini.configure do |config|
@@ -220,6 +221,23 @@ describe Dynamini::Base do
       end
     end
 
+    describe '#update_attribute' do
+
+      it 'should update the attribute and save the object' do
+        expect(model).to receive(:save!)
+        model.update_attribute(:name, 'Widget 2.0')
+        expect(model.name).to eq('Widget 2.0')
+      end
+    end
+
+    describe '#update_attributes' do
+      it 'should update multiple attributes and save the object' do
+        expect(model).to receive(:save!)
+        model.update_attributes(name: 'Widget 2.0', price: 12.00)
+        expect(model.attributes).to include(name: 'Widget 2.0', price: 12.00)
+      end
+    end
+
     describe '#save' do
 
       context 'when passing validation' do
@@ -384,7 +402,21 @@ describe Dynamini::Base do
       it 'should return all attributes of the object' do
         expect(model.attributes).to eq model_attributes
       end
+    end
 
+    describe '.exists?' do
+      context 'the item exists' do
+        it 'should return true' do
+          model.save
+          expect(Dynamini::Base.exists?(model_attributes[:id])).to be_truthy
+        end
+      end
+
+      context 'the item does not exist' do
+        it 'should return false' do
+          expect(Dynamini::Base.exists?('nonexistent id')).to be_falsey
+        end
+      end
     end
 
 

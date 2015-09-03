@@ -1,9 +1,9 @@
 Gem::Specification.new do |s|
   s.name        = 'dynamini'
-  s.version     = '1.2.0'
+  s.version     = '1.2.1'
   s.date        = '2015-09-02'
   s.summary     = 'DynamoDB interface'
-  s.description = 'Lightweight DynamoDB interface designed as a drop-in replacement for ActiveRecord.'
+  s.description = 'Lightweight DynamoDB interface gem designed as a drop-in replacement for ActiveRecord.'
   s.authors     = ['Greg Ward', 'David McHoull', 'Alishan Ladhani', 'Emily Fan']
   s.email       = 'dev@retailcommon.com'
   s.files       = ['lib/dynamini.rb', 'lib/dynamini/base.rb', 'lib/dynamini/configuration.rb', 'lib/dynamini/test_client.rb']

@@ -52,8 +52,8 @@ module Dynamini
       end
 
       def exists?(key)
-        return true if client.get_item(table_name: table_name, key: {hash_key => key.to_s})
-        false
+        response = client.get_item(table_name: table_name, key: {hash_key => key.to_s})
+        response.item.present?
       end
 
       def find_or_new(key)
@@ -100,7 +100,7 @@ module Dynamini
       @attributes = attributes
       @changed = Set.new
       @new_record = new_record
-      add_changed(attributes)
+      add_changed(attributes) if new_record
     end
 
     def assign_attributes(attributes)
@@ -109,6 +109,20 @@ module Dynamini
       end
       @attributes.merge!(attributes)
       nil
+    end
+
+    def update_attribute(key, value)
+      record_change(key, value, @attributes[key])
+      @attributes[key] = value
+      save!
+    end
+
+    def update_attributes(attributes)
+      attributes.each do |key, value|
+        record_change(key, read_attribute(key), value)
+      end
+      @attributes.merge!(attributes)
+      save!
     end
 
     def save(options = {})

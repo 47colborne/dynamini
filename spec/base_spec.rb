@@ -368,6 +368,13 @@ describe Dynamini::Base do
         expect(model.updated_at).to eq(time.to_f)
         expect(model.created_at).to_not eq(time.to_f)
       end
+      it 'should preserve previously saved attributes' do
+        model.foo = 1
+        model.save
+        model.bar = 2
+        model.save
+        expect(model.foo).to eq 1
+      end
     end
     context 'when suppressing timestamps' do
       it 'should not set either timestamp' do

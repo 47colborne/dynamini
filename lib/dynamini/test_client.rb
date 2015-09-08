@@ -12,9 +12,13 @@ module Dynamini
 
     def update_item(args = {})
       table = args[:table_name]
+      updates = flatten_attribute_updates(args[:attribute_updates]).merge({hash_key => args[:key][hash_key]})
       @data[table] ||= {}
-      @data[table][args[:key][hash_key]] = flatten_attribute_updates(args[:attribute_updates])
-      @data[table][args[:key][hash_key]][hash_key] = args[:key][hash_key]
+      if @data[table][args[:key][hash_key]].present?
+        @data[table][args[:key][hash_key]].merge!(updates)
+      else
+        @data[table][args[:key][hash_key]] = updates
+      end
     end
 
     def get_item(args = {})

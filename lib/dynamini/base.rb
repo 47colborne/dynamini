@@ -103,6 +103,10 @@ module Dynamini
       add_changed(attributes) if new_record
     end
 
+    def ==(object)
+      attributes == object.attributes
+    end
+
     def assign_attributes(attributes)
       attributes.each do |key, value|
         record_change(key, read_attribute(key), value)

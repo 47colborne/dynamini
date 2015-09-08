@@ -204,6 +204,24 @@ describe Dynamini::Base do
       end
     end
 
+    describe '#==' do
+      let(:model2) { Dynamini::Base.new(model_attributes).tap { |model| model.send(:clear_changes) } }
+
+      let(:model_attributes2) { {name: 'Widgett', price: 8.99, id: 'abcd12345'} }
+      let(:model3) { Dynamini::Base.new(model_attributes2).tap { |model| model.send(:clear_changes) } }
+
+      context 'when the object attributes are the same' do
+        it 'it should return true' do
+          expect(model.==(model2)).to be_truthy
+        end
+      end
+
+      context 'when the object attributes are different' do
+        it 'should return false' do
+          expect(model.==(model3)).to be_falsey
+        end
+      end
+    end
 
     describe '#assign_attributes' do
       it 'should return nil' do

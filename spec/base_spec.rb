@@ -2,7 +2,7 @@ require 'spec_helper'
 
 
 describe Dynamini::Base do
-  let(:model_attributes) { {name: 'Widget', price: 9.99, id: 'abcd1234'} }
+  let(:model_attributes) { {name: 'Widget', price: 9.99, id: 'abcd1234', hash_key: '009'} }
 
   subject(:model) { Dynamini::Base.new(model_attributes).tap { |model| model.send(:clear_changes) } }
 
@@ -205,20 +205,34 @@ describe Dynamini::Base do
     end
 
     describe '#==' do
-      let(:model2) { Dynamini::Base.new(model_attributes).tap { |model| model.send(:clear_changes) } }
+      let(:model_a) { Dynamini::Base.new(model_attributes).tap { |model| model.send(:clear_changes) } }
+      let(:model_attributes_d) { {name: 'Widget', price: 9.99, hash_key: '007'} }
 
-      let(:model_attributes2) { {name: 'Widgett', price: 8.99, id: 'abcd12345'} }
-      let(:model3) { Dynamini::Base.new(model_attributes2).tap { |model| model.send(:clear_changes) } }
-
-      context 'when the object attributes are the same' do
+      context 'when the object is reflexive ( a = a )' do
         it 'it should return true' do
-          expect(model.==(model2)).to be_truthy
+          expect(model_a.==(model_a)).to be_truthy
+        end
+      end
+
+      context 'when the object is symmetric ( if a = b then b = a )' do
+        it 'it should return true' do
+          model_b = model_a
+          expect(model_a.==(model_b)).to be_truthy
+        end
+      end
+
+      context 'when the object is transitive (if a = b and b = c then a = c)' do
+        it 'it should return true' do
+          model_b = model_a
+          model_c = model_b
+          expect(model_a.==(model_c)).to be_truthy
         end
       end
 
       context 'when the object attributes are different' do
         it 'should return false' do
-          expect(model.==(model3)).to be_falsey
+          model_d = Dynamini::Base.new(model_attributes_d).tap { |model| model.send(:clear_changes) }
+          expect(model_a.==(model_d)).to be_falsey
         end
       end
     end

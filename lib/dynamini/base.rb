@@ -104,7 +104,7 @@ module Dynamini
     end
 
     def ==(object)
-      attributes == object.attributes
+      hash_key == object.hash_key if object.is_a?(self.class)
     end
 
     def assign_attributes(attributes)

@@ -1,3 +1,5 @@
 .idea
 *.gem
 dynamini.iml
+.ruby-version
+.ruby-gemset

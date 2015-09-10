@@ -22,7 +22,9 @@ module Dynamini
     end
 
     def get_item(args = {})
-      attributes_hash = @data[args[:table_name]][args[:key][hash_key]]
+      table = args[:table_name]
+      @data[table] ||= {}
+      attributes_hash = @data[table ][args[:key][hash_key]]
       item = attributes_hash.nil? ? nil : attributes_hash
       OpenStruct.new(item: item)
     end

@@ -2,7 +2,7 @@
 Dynamini is a lightweight DynamoDB interface designed as a drop-in replacement for ActiveRecord. This gem powers part of our stack at yroo.com.
 
 ## The Basics
-This gem is an opinionated interface, meaning it's set up to let you use DynamoDB at its most efficient. That means traditional SQL functions like WHERE, GROUP BY, and HAVING are not implemented, since using these defeats the performance gains realized by switching to Dynamo in the first place. It's intended to be simple to use, understand, and extend. The ideal use case for this gem is when you have an ActiveRecord->SQL table with way too much concurrent activity, resulting in constant table locking. After you've moved your data to Dynamo, and installed and configured this gem, the following ActiveRecord commands will still work for your model:
+This gem is an opinionated interface, meaning it's set up to let you use DynamoDB at its most efficient. That means traditional relational DB functions like WHERE, GROUP BY, and HAVING are not implemented, since using these defeats the performance gains realized by switching to Dynamo in the first place. It's intended to be simple to use, understand, and extend. The ideal use case for this gem is when you have an ActiveRecord->SQL table with way too much concurrent activity, resulting in constant table locking. After you've moved your data to Dynamo, and installed and configured this gem, the following ActiveRecord commands will still work for your model:
 
 Class methods:
 * create(attributes)
@@ -88,6 +88,11 @@ config.after(:each) {
  but if you use strings, remember to change your foreign key columns on related objects to be string type.
 * You might want to conditionally set the table name for your model based on the Rails.env, enabling separate tables for development and production.
 
+## Coming Soon
+* #delete
+* Support for range keys
+* Automatic date/time handling
+
 ## Contributing
 
-So far, with this gem in its infancy, some obvious methods like #delete aren't yet implemented. If you'd like to contribute, pull requests are welcome!
+If you'd like to contribute, pull requests are welcome!

@@ -82,7 +82,7 @@ config.after(:each) {
 ## Things to remember
 * Since DynamoDB is schemaless, your model will respond to any method that looks like a reader, meaning model.foo will return nil.
 * You can also write any arbitrary attribute to your model.
-* Other models in your app cannot have a has_one or has_many relationship with your Dynamini model, since these would require a table scan. Your other models can still use belongs_to. Your Dynamini model can still use belongs_to, has_one, or has_many.
+* Other models in your app cannot have a has_one or has_many relationship with your Dynamini model, since these would require a table scan. Your other models can still use belongs_to.
 * Polymorphism is not yet fully supported, so you may have to implement your own __able method on your parent object.
 * If you change the primary key value on an instance of your model, then resave it, you'll have two copies in your database.
 * Dates and Times cannot be saved to Dynamo. Convert these to floats first and convert them back upon retrieval.

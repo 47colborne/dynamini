@@ -155,6 +155,11 @@ module Dynamini
       end
     end
 
+    def delete
+      delete_from_dynamo
+      self
+    end
+
     def changes
       @attributes.select { |attribute| @changed.include?(attribute.to_s) && attribute != self.class.hash_key }
     end
@@ -198,6 +203,10 @@ module Dynamini
 
     def touch_to_dynamo
       self.class.client.update_item(table_name: self.class.table_name, key: key, attribute_updates: {updated_at: {value: updated_at, action: 'PUT'}})
+    end
+
+    def delete_from_dynamo
+      self.class.client.delete_item(table_name: self.class.table_name, key: key)
     end
 
     def self.dynamo_batch_get(key_structure)

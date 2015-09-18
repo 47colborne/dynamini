@@ -19,6 +19,7 @@ Instance methods:
 * update_attribute(attribute, value)
 * save
 * save!
+* delete
 * touch
 * changes
 * changed
@@ -91,9 +92,9 @@ config.after(:each) {
 * You might want to conditionally set the table name for your model based on the Rails.env, enabling separate tables for development and production.
 
 ## Coming Soon
-* #delete
+* Automatic type conversion on read/write
 * Support for range keys
-* Automatic date/time handling
+
 
 ## Contributing
 

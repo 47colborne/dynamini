@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
   s.name        = 'dynamini'
-  s.version     = '1.2.7'
-  s.date        = '2015-09-02'
+  s.version     = '1.3.8'
+  s.date        = '2015-09-18'
   s.summary     = 'DynamoDB interface'
   s.description = 'Lightweight DynamoDB interface gem designed as a drop-in replacement for ActiveRecord. Built & maintained by the team at yroo.com.'
   s.authors     = ['Greg Ward', 'David McHoull', 'Alishan Ladhani', 'Emily Fan', 'Justine Jones']
@@ -16,5 +16,6 @@ Gem::Specification.new do |s|
 
   s.add_development_dependency 'rspec', '~> 3'
   s.add_development_dependency 'pry', '~> 0'
+  s.add_development_dependency 'fuubar', '~> 2'
 
 end

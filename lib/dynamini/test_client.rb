@@ -54,6 +54,10 @@ module Dynamini
       end
     end
 
+    def delete_item(args = {})
+      @data[args[:table_name]].delete(args[:key][hash_key])
+    end
+
     def reset
       @data = {}
     end

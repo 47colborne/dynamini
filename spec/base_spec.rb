@@ -4,11 +4,16 @@ require 'spec_helper'
 describe Dynamini::Base do
   let(:model_attributes) { {name: 'Widget', price: 9.99, id: 'abcd1234', hash_key: '009'} }
 
-  subject(:model) { Dynamini::Base.new(model_attributes).tap { |model| model.send(:clear_changes) } }
+  subject(:model) { Dynamini::Base.new(model_attributes) }
 
 
   before do
     Dynamini::Base.in_memory = true
+    model.save
+  end
+
+  after do
+    Dynamini::Base.client.reset
   end
 
 
@@ -25,11 +30,9 @@ describe Dynamini::Base do
   end
 
   describe '.client' do
-    it 'should create the client only once' do
-      expect(Dynamini::TestClient).to receive(:new).once.and_return(1)
+    it 'should not reinstantiate the client' do
+      expect(Dynamini::TestClient).to_not receive(:new)
       Dynamini::Base.client
-      Dynamini::Base.client
-      Dynamini::Base.instance_variable_set(:@client, nil)
     end
   end
 
@@ -50,8 +53,10 @@ describe Dynamini::Base do
 
     describe '.create' do
       it 'should save the item' do
-        Dynamini::Base.create(model_attributes)
-        expect(Dynamini::Base.find(model_attributes[:id])).to_not be_nil
+        other_model_attributes = model_attributes
+        other_model_attributes[:id] = 'xyzzy'
+        Dynamini::Base.create(other_model_attributes)
+        expect(Dynamini::Base.find(other_model_attributes[:id])).to_not be_nil
       end
 
       it 'should return an instance of the model' do
@@ -71,7 +76,6 @@ describe Dynamini::Base do
     describe '.find' do
 
       it 'should return a model with the retrieved attributes' do
-        Dynamini::Base.create(model_attributes)
         expect(Dynamini::Base.find('abcd1234').attributes).to eq(model_attributes)
       end
 
@@ -159,9 +163,10 @@ describe Dynamini::Base do
     describe '.dynamo_batch_save' do
       it 'should batch write the models to dynamo' do
         model2 = Dynamini::Base.create(id: '123')
-        Dynamini::Base.dynamo_batch_save([model, model2])
+        model3 = Dynamini::Base.create(id: '456')
+        Dynamini::Base.dynamo_batch_save([model2, model3])
         expect(Dynamini::Base.find('123')).to_not be_nil
-        expect(Dynamini::Base.find(model.id)).to_not be_nil
+        expect(Dynamini::Base.find('456')).to_not be_nil
       end
     end
 
@@ -173,7 +178,6 @@ describe Dynamini::Base do
       end
       context 'when requesting 2 items' do
         it 'should return a 2-length array containing each item' do
-          model.save
           Dynamini::Base.create(id: '4321')
           objects = Dynamini::Base.batch_find(['abcd1234', '4321'])
           expect(objects.length).to eq 2
@@ -193,7 +197,6 @@ describe Dynamini::Base do
     describe '.find_or_new' do
       context 'when a record with the given key exists' do
         it 'should return that record' do
-          model.save
           expect(Dynamini::Base.find_or_new(model.id).new_record?).to be_falsey
         end
       end
@@ -299,6 +302,7 @@ describe Dynamini::Base do
                                                          key: {id: model_attributes[:id]},
                                                          attribute_updates: hash_not_including({foo: {value: '', action: 'PUT'}}))
             model.foo = ''
+            model.bar = 4
             model.save
           end
         end
@@ -336,6 +340,22 @@ describe Dynamini::Base do
       end
 
     end
+
+
+    describe '#delete' do
+      context 'when the item exists in the DB' do
+        it 'should delete the item and return the item' do
+          expect(model.delete).to eq(model)
+          expect{ Dynamini::Base.find(model.id) }.to raise_error 'Item not found.'
+        end
+      end
+      context 'when the item does not exist in the DB' do
+        it 'should return the item' do
+          expect(model.delete).to eq(model)
+        end
+      end
+    end
+
   end
 
   describe '#touch' do
@@ -344,9 +364,12 @@ describe Dynamini::Base do
       expect(model.class.client).to receive(:update_item).with(table_name: 'bases',
                                                    key: {id: model_attributes[:id]},
                                                    attribute_updates: {updated_at: {value: 1.0, action: 'PUT'}})
-      expect { model.touch }.to raise_error RuntimeError
-      model.instance_variable_set(:@new_record, false)
       model.touch
+    end
+
+    it 'should raise an error when called on a new record' do
+      new_model = Dynamini::Base.new(id: '3456')
+      expect{ new_model.touch }.to raise_error StandardError
     end
   end
 
@@ -386,15 +409,13 @@ describe Dynamini::Base do
     end
     context 'new record' do
       it 'should set created and updated time to current time' do
-        model.price = 5
-        model.save
-        expect(model.created_at).to eq(time.to_f)
-        expect(model.updated_at).to eq(time.to_f)
+        new_model = Dynamini::Base.create(id: '6789')
+        expect(new_model.created_at).to eq(time.to_f)
+        expect(new_model.updated_at).to eq(time.to_f)
       end
     end
     context 'existing record' do
       it 'should set updated time but not created time' do
-        model.instance_variable_set(:@new_record, false)
         model.price = 5
         model.save
         expect(model.updated_at).to eq(time.to_f)
@@ -446,7 +467,6 @@ describe Dynamini::Base do
     describe '.exists?' do
       context 'the item exists' do
         it 'should return true' do
-          model.save
           expect(Dynamini::Base.exists?(model_attributes[:id])).to be_truthy
         end
       end
@@ -460,17 +480,13 @@ describe Dynamini::Base do
 
 
     describe '#new_record?' do
-
       it 'should return true for a new record' do
-        expect(model.new_record?).to be_truthy
+        expect(Dynamini::Base.new).to be_truthy
       end
       it 'should return false for a retrieved record' do
-        model.save
         expect(Dynamini::Base.find('abcd1234').new_record?).to be_falsey
       end
       it 'should return false after a new record is saved' do
-        model.foo = 'bar'
-        model.save
         expect(model.new_record?).to be_falsey
       end
     end

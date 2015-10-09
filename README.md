@@ -49,8 +49,8 @@ Then set up your model. You'll need to have it inherit from Dynamini::Base, then
 Here's what a sample model looks like. We'll refer back to this model later in the documentation.
 ```ruby
 class Vehicle < Dynamini::Base
-    self.hash_key = :vin           # defaults to :id if not set
-    self.table_name = 'desks-dev'  # defaults to the pluralized, downcased model name if not set
+    set_hash_key :vin           # defaults to :id if not set
+    set_table_name 'desks-dev'  # defaults to the pluralized, downcased model name if not set
 
     # ...All the rest of your class methods, instance methods, and validators
 end

@@ -6,10 +6,23 @@ module Dynamini
     BATCH_SIZE = 25
 
     class << self
-      attr_writer :hash_key, :table_name, :batch_write_queue, :in_memory
+      attr_writer :batch_write_queue, :in_memory
 
       def table_name
         @table_name || name.demodulize.downcase.pluralize
+      end
+
+      def set_table_name(name)
+        @table_name = name
+      end
+
+      def set_hash_key(key)
+        @hash_key = key
+      end
+
+      def handle(column, format_class, options={})
+        define_handled_getter(column, format_class, options)
+        define_handled_setter(column)
       end
 
       def hash_key
@@ -96,12 +109,18 @@ module Dynamini
 
     end
 
+    #### Instance Methods
+
     def initialize(attributes={}, new_record = true)
-      @attributes = attributes
       @changed = Set.new
       @new_record = new_record
-      add_changed(attributes) if new_record
+      @attributes = {}
+
+      attributes.each do |k, v|
+        write_attribute(k, v, new_record)
+      end
     end
+
 
     def ==(object)
       hash_key == object.hash_key if object.is_a?(self.class)
@@ -109,23 +128,18 @@ module Dynamini
 
     def assign_attributes(attributes)
       attributes.each do |key, value|
-        record_change(key, read_attribute(key), value)
+        write_attribute(key, value)
       end
-      @attributes.merge!(attributes)
       nil
     end
 
     def update_attribute(key, value)
-      record_change(key, value, @attributes[key])
-      @attributes[key] = value
+      write_attribute(key, value)
       save!
     end
 
     def update_attributes(attributes)
-      attributes.each do |key, value|
-        record_change(key, read_attribute(key), value)
-      end
-      @attributes.merge!(attributes)
+      assign_attributes(attributes)
       save!
     end
 
@@ -202,7 +216,7 @@ module Dynamini
     end
 
     def touch_to_dynamo
-      self.class.client.update_item(table_name: self.class.table_name, key: key, attribute_updates: {updated_at: {value: updated_at, action: 'PUT'}})
+      self.class.client.update_item(table_name: self.class.table_name, key: key, attribute_updates: {updated_at: {value: attributes[:updated_at], action: 'PUT'}})
     end
 
     def delete_from_dynamo
@@ -259,14 +273,47 @@ module Dynamini
       name =~ /^([a-zA-Z][-_\w]*)=.*$/
     end
 
+    def self.define_handled_getter(column, format_class, options={})
+      case format_class
+        when :integer
+          proc = Proc.new {|v| v.to_i}
+        when :datetime
+          proc = Proc.new {|v| Time.at(v.to_f)}
+        when :float
+          proc = Proc.new {|v| v.to_f}
+        when :symbol
+          proc = Proc.new {|v| v.to_sym}
+        when :string
+          proc = Proc.new {|v| v}
+        else
+          raise 'Unsupported data type: ' + format_class.to_s
+      end
+
+      define_method(column) do
+        if read_attribute(column)
+          proc.call(read_attribute(column))
+        else
+          options[:default] || nil
+        end
+      end
+    end
+
+    def self.define_handled_setter(column)
+      setter_symbol = (column.to_s + '=').to_sym
+
+      define_method(setter_symbol) do |value|
+        write_attribute(column, value)
+      end
+    end
+
     def respond_to_missing?(name, include_private=false)
       @attributes.keys.include?(name) || write_method?(name) || super
     end
 
-    def write_attribute(attribute, new_value)
+    def write_attribute(attribute, new_value, record_change=true)
       old_value = @attributes[attribute]
-      @attributes[attribute] = new_value
-      record_change(attribute, new_value, old_value)
+      @attributes[attribute] = (new_value.nil? ? nil : new_value.to_s)
+      record_change(attribute, new_value.to_s, old_value) if record_change
     end
 
     def record_change(attribute, new_value, old_value)
@@ -276,5 +323,10 @@ module Dynamini
     def read_attribute(name)
       @attributes[name]
     end
+
+    #### Default class macros
+
+    handle :updated_at, :datetime
+    handle :created_at, :datetime
   end
 end

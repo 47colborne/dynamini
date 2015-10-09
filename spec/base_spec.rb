@@ -2,7 +2,7 @@ require 'spec_helper'
 
 
 describe Dynamini::Base do
-  let(:model_attributes) { {name: 'Widget', price: 9.99, id: 'abcd1234', hash_key: '009'} }
+  let(:model_attributes) { {name: 'Widget', price: '9.99', id: 'abcd1234', hash_key: '009'} }
 
   subject(:model) { Dynamini::Base.new(model_attributes) }
 
@@ -60,7 +60,7 @@ describe Dynamini::Base do
       end
 
       it 'should return an instance of the model' do
-        expect(Dynamini::Base.create(model_attributes).attributes).to eq(model_attributes)
+        expect(Dynamini::Base.create(model_attributes)).to be_a(Dynamini::Base)
       end
 
       context 'when creating a subclass' do
@@ -76,11 +76,13 @@ describe Dynamini::Base do
     describe '.find' do
 
       it 'should return a model with the retrieved attributes' do
-        expect(Dynamini::Base.find('abcd1234').attributes).to eq(model_attributes)
+        found = Dynamini::Base.find('abcd1234')
+        expect(found.price).to eq('9.99')
+        expect(found.name).to eq('Widget')
+        expect(found.hash_key).to eq('009')
       end
 
       context 'when the object does not exist' do
-
         it 'should raise an error' do
           expect { Dynamini::Base.find('foo') }.to raise_error 'Item not found.'
         end
@@ -242,16 +244,16 @@ describe Dynamini::Base do
 
     describe '#assign_attributes' do
       it 'should return nil' do
-        expect(model.assign_attributes(price: 5)).to be_nil
+        expect(model.assign_attributes(price: '5')).to be_nil
       end
 
       it 'should update the attributes of the model' do
-        model.assign_attributes(price: 5)
-        expect(model.attributes[:price]).to eq(5)
+        model.assign_attributes(price: '5')
+        expect(model.attributes[:price]).to eq('5')
       end
 
       it 'should append changed attributes to @changed' do
-        model.assign_attributes(name: 'Widget', price: 5)
+        model.assign_attributes(name: 'Widget', price: '5')
         expect(model.changed).to eq ['price']
       end
     end
@@ -268,8 +270,8 @@ describe Dynamini::Base do
     describe '#update_attributes' do
       it 'should update multiple attributes and save the object' do
         expect(model).to receive(:save!)
-        model.update_attributes(name: 'Widget 2.0', price: 12.00)
-        expect(model.attributes).to include(name: 'Widget 2.0', price: 12.00)
+        model.update_attributes(name: 'Widget 2.0', price: '12.00')
+        expect(model.attributes).to include(name: 'Widget 2.0', price: '12.00')
       end
     end
 
@@ -284,8 +286,8 @@ describe Dynamini::Base do
           it 'should call update_item with the changed attributes' do
             expect(model.class.client).to receive(:update_item).with(table_name: 'bases',
                                                          key: {id: model_attributes[:id]},
-                                                         attribute_updates: hash_including({price: {value: 5, action: 'PUT'}}))
-            model.price = 5
+                                                         attribute_updates: hash_including({price: {value: '5', action: 'PUT'}}))
+            model.price = '5'
             model.save
           end
 
@@ -363,7 +365,7 @@ describe Dynamini::Base do
       allow(Time).to receive(:now).and_return 1
       expect(model.class.client).to receive(:update_item).with(table_name: 'bases',
                                                    key: {id: model_attributes[:id]},
-                                                   attribute_updates: {updated_at: {value: 1.0, action: 'PUT'}})
+                                                   attribute_updates: {updated_at: {value: '1.0', action: 'PUT'}})
       model.touch
     end
 
@@ -375,7 +377,7 @@ describe Dynamini::Base do
 
   describe '#save!' do
     class TestValidation < Dynamini::Base
-      self.hash_key = :bar
+      set_hash_key :bar
       validates_presence_of :foo
       self.in_memory = true
     end
@@ -393,7 +395,7 @@ describe Dynamini::Base do
 
   describe '.create!' do
     class TestValidation < Dynamini::Base
-      self.hash_key = :bar
+      set_hash_key :bar
       validates_presence_of :foo
     end
 
@@ -410,42 +412,46 @@ describe Dynamini::Base do
     context 'new record' do
       it 'should set created and updated time to current time' do
         new_model = Dynamini::Base.create(id: '6789')
-        expect(new_model.created_at).to eq(time.to_f)
-        expect(new_model.updated_at).to eq(time.to_f)
+        expect(new_model.created_at.to_s).to eq(time.to_s)  # stringify to handle floating point rounding issue
+        expect(new_model.updated_at.to_s).to eq(time.to_s)
       end
     end
     context 'existing record' do
       it 'should set updated time but not created time' do
-        model.price = 5
-        model.save
-        expect(model.updated_at).to eq(time.to_f)
-        expect(model.created_at).to_not eq(time.to_f)
+        existing_model = Dynamini::Base.new({name: 'foo'}, false)
+        existing_model.price = 5
+        existing_model.save
+        expect(existing_model.updated_at.to_s).to eq(time.to_s)
+        expect(existing_model.created_at.to_s).to_not eq(time.to_s)
       end
       it 'should preserve previously saved attributes' do
-        model.foo = 1
+        model.foo = '1'
         model.save
         model.bar = 2
         model.save
-        expect(model.foo).to eq 1
+        expect(model.foo).to eq '1'
       end
     end
     context 'when suppressing timestamps' do
       it 'should not set either timestamp' do
-        model.instance_variable_set(:@new_record, false)
-        model.price = 5
-        model.save(skip_timestamps: true)
-        expect(model.updated_at).to_not eq(time.to_f)
-        expect(model.created_at).to_not eq(time.to_f)
+        existing_model = Dynamini::Base.new({name: 'foo'}, false)
+        existing_model.price = 5
+
+        existing_model.save(skip_timestamps: true)
+
+        expect(existing_model.updated_at.to_s).to_not eq(time.to_s)
+        expect(existing_model.created_at.to_s).to_not eq(time.to_s)
       end
     end
 
 
   end
 
-  describe 'metaconfig' do
+  describe 'table config' do
     class TestModel < Dynamini::Base
-      self.hash_key = :email
-      self.table_name = 'people'
+      set_hash_key :email
+      set_table_name 'people'
+
     end
 
     it 'should override the primary_key' do
@@ -457,10 +463,39 @@ describe Dynamini::Base do
     end
   end
 
+  describe 'custom column handling' do
+    class HandleModel < Dynamini::Base
+      handle :price, :float, default: 0
+      handle :start_date, :datetime
+    end
+
+    let(:handle_model){ HandleModel.new }
+
+    it 'should create getters and setters' do
+      expect(handle_model).to_not receive(:method_missing)
+      handle_model.price = 1
+      handle_model.price
+    end
+
+    it 'should store handled attributes as strings in the attributes hash' do
+      handle_model.price = 5.2
+      expect(handle_model.attributes).to include(price: '5.2')
+    end
+
+    it 'should retrieve price as a float' do
+      handle_model.price = '5.2'
+      expect(handle_model.price).to be_a(Float)
+    end
+
+    it 'should default price to 0 if not set' do
+      expect(handle_model.price).to eq 0
+    end
+  end
+
   describe 'attributes' do
     describe '#attributes' do
       it 'should return all attributes of the object' do
-        expect(model.attributes).to eq model_attributes
+        expect(model.attributes).to include model_attributes
       end
     end
 
@@ -497,7 +532,7 @@ describe Dynamini::Base do
 
       context 'existing attribute' do
         it 'should return the attribute' do
-          expect(model.price).to eq(9.99)
+          expect(model.price).to eq('9.99')
         end
       end
 
@@ -526,9 +561,9 @@ describe Dynamini::Base do
       it { is_expected.to respond_to(:baz=) }
 
       context 'existing attribute' do
-        before { model.price = 1 }
+        before { model.price = '1' }
         it 'should overwrite the attribute' do
-          expect(model.price).to eq(1)
+          expect(model.price).to eq('1')
         end
       end
       context 'new attribute' do

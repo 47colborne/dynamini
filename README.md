@@ -120,7 +120,6 @@ config.after(:each) {
 * You might want to conditionally set the table name for your model based on the Rails.env, enabling separate tables for development and production.
 
 ## Coming Soon
-* Automatic type conversion on read/write
 * Support for range keys
 
 

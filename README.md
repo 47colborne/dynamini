@@ -57,7 +57,7 @@ end
 ```
 
 ## Datatype Handling
-The Dynamo ruby SDK stores and retrieves all fields as strings. This can be inconvenient for numeric fields or dates, since you'll have to convert them to the correct type after retrieval. Dynamini supports automatic type conversion, allowing you to save non-string attributes to your model and retrieve them as the correct datatype later. If you want to see the stringified version sent to and from the database, just check the attributes hash. You can also specify default values for your fields. Here's how you set it up:
+The Dynamo Ruby SDK stores and retrieves all fields as strings. This can be inconvenient for numeric fields or dates, since you'll have to convert them to the correct type after retrieval. Dynamini supports automatic type conversion, allowing you to save non-string attributes to your model and retrieve them as the correct datatype later. If you want to see the stringified version sent to and from the database, just check the attributes hash. You can also specify default values for your fields. Here's how you set it up:
 
 ```ruby
 class Vehicle < Dynamini::Base

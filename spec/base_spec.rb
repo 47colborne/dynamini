@@ -465,7 +465,7 @@ describe Dynamini::Base do
 
   describe 'custom column handling' do
     class HandleModel < Dynamini::Base
-      handle :price, :float, default: 0
+      handle :price, :float, default: 10
       handle :start_date, :datetime
     end
 
@@ -488,7 +488,7 @@ describe Dynamini::Base do
     end
 
     it 'should default price to 0 if not set' do
-      expect(handle_model.price).to eq 0
+      expect(handle_model.price).to eq 10
     end
   end
 

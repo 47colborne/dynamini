@@ -56,6 +56,36 @@ class Vehicle < Dynamini::Base
 end
 ```
 
+## Datatype Handling
+Dynamo stores all fields as strings. This can be inconvenient for numeric fields or dates, since you'll have to convert them to the correct type after retrieval. Dynamini supports automatic type conversion, allowing you to save non-string attributes to your model and retrieve them as the correct datatype later. If you want to see the stringified version sent to and from the database, just check the attributes hash. You can also specify default values for your fields. Here's how you set it up:
+
+```ruby
+class Test < Dynamini::Base
+    handle :score, :integer, default: 80
+end
+
+my_test = Test.new
+my_test.score
+> 80
+my_test.score = 90
+my_test.score
+> 90
+my_test.attributes
+> { score: '90' }
+```
+
+Defaults are optional - without a default, a handled field without a value assigned to it will return nil like any other field.
+
+The following datatypes are supported by handle:
+* :integer
+* :float
+* :symbol
+* :datetime
+* :string
+
+Note that the magic fields updated_at and created_at are handled as :datetime by default.
+
+
 ## Testing
 There's a test client included with this gem, meaning you don't have to connect to a real Dynamo instance when testing.
 You could also use this in development if you dont have a real Dynamo instance yet, but the data saved to it won't persist through a server restart.
@@ -84,11 +114,9 @@ config.after(:each) {
 * Since DynamoDB is schemaless, your model will respond to any method that looks like a reader, meaning model.foo will return nil.
 * You can also write any arbitrary attribute to your model.
 * Other models in your app cannot have a has_one or has_many relationship with your Dynamini model, since these would require a table scan. Your other models can still use belongs_to.
-* Polymorphism is not yet fully supported, so you may have to implement your own __able method on your parent object.
 * If you change the primary key value on an instance of your model, then resave it, you'll have two copies in your database.
-* Dates and Times cannot be saved to Dynamo. Convert these to floats first and convert them back upon retrieval.
 * The primary key is saved as a string. If you use stringified integers, your relationships should work normally,
- but if you use strings, remember to change your foreign key columns on related objects to be string type.
+ but if you use non-numeric strings for your keys, remember to change your foreign key columns on related objects to be string type.
 * You might want to conditionally set the table name for your model based on the Rails.env, enabling separate tables for development and production.
 
 ## Coming Soon

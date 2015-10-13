@@ -284,7 +284,7 @@ module Dynamini
       proc = TRANSLATION_PROCS[format_class]
       raise 'Unsupported data type: ' + format_class.to_s if proc.nil?
       define_method(column) do
-        if read_attribute(column)
+        if @attributes.has_key?(column)
           proc.call(read_attribute(column))
         else
           options[:default] || nil

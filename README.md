@@ -57,21 +57,21 @@ end
 ```
 
 ## Datatype Handling
-Dynamo stores all fields as strings. This can be inconvenient for numeric fields or dates, since you'll have to convert them to the correct type after retrieval. Dynamini supports automatic type conversion, allowing you to save non-string attributes to your model and retrieve them as the correct datatype later. If you want to see the stringified version sent to and from the database, just check the attributes hash. You can also specify default values for your fields. Here's how you set it up:
+The Dynamo Ruby SDK stores and retrieves all fields as strings. This can be inconvenient for numeric fields or dates, since you'll have to convert them to the correct type after retrieval. Dynamini supports automatic type conversion, allowing you to save non-string attributes to your model and retrieve them as the correct datatype later. If you want to see the stringified version sent to and from the database, just check the attributes hash. You can also specify default values for your fields. Here's how you set it up:
 
 ```ruby
-class Test < Dynamini::Base
-    handle :score, :integer, default: 80
+class Vehicle < Dynamini::Base
+    handle :top_speed, :integer, default: 80
 end
 
-my_test = Test.new
-my_test.score
+car = Vehicle.new
+car.top_speed
 > 80
-my_test.score = 90
-my_test.score
+car.top_speed = 90
+car.top_speed
 > 90
-my_test.attributes
-> { score: '90' }
+car.attributes
+> { top_speed: '90' }
 ```
 
 Defaults are optional - without a default, a handled field without a value assigned to it will return nil like any other field.
@@ -120,7 +120,6 @@ config.after(:each) {
 * You might want to conditionally set the table name for your model based on the Rails.env, enabling separate tables for development and production.
 
 ## Coming Soon
-* Automatic type conversion on read/write
 * Support for range keys
 
 

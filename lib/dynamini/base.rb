@@ -4,6 +4,13 @@ module Dynamini
     attr_reader :attributes
 
     BATCH_SIZE = 25
+    TRANSLATION_PROCS = {
+        integer: Proc.new {|v| v.to_i},
+        datetime: Proc.new {|v| Time.at(v.to_f)},
+        float: Proc.new {|v| v.to_f},
+        symbol: Proc.new {|v| v.to_sym},
+        string: Proc.new {|v| v}
+    }
 
     class << self
       attr_writer :batch_write_queue, :in_memory
@@ -274,21 +281,8 @@ module Dynamini
     end
 
     def self.define_handled_getter(column, format_class, options={})
-      case format_class
-        when :integer
-          proc = Proc.new {|v| v.to_i}
-        when :datetime
-          proc = Proc.new {|v| Time.at(v.to_f)}
-        when :float
-          proc = Proc.new {|v| v.to_f}
-        when :symbol
-          proc = Proc.new {|v| v.to_sym}
-        when :string
-          proc = Proc.new {|v| v}
-        else
-          raise 'Unsupported data type: ' + format_class.to_s
-      end
-
+      proc = TRANSLATION_PROCS[format_class]
+      raise 'Unsupported data type: ' + format_class.to_s if proc.nil?
       define_method(column) do
         if read_attribute(column)
           proc.call(read_attribute(column))

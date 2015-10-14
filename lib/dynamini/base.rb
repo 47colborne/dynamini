@@ -5,11 +5,12 @@ module Dynamini
 
     BATCH_SIZE = 25
     TRANSLATION_PROCS = {
-        integer: Proc.new {|v| v.to_i},
-        datetime: Proc.new {|v| Time.at(v.to_f)},
-        float: Proc.new {|v| v.to_f},
-        symbol: Proc.new {|v| v.to_sym},
-        string: Proc.new {|v| v}
+        integer: Proc.new   { |v| v.to_i },
+        datetime: Proc.new  { |v| Time.at(v.to_f) },
+        float: Proc.new     { |v| v.to_f },
+        symbol: Proc.new    { |v| v.to_sym },
+        string: Proc.new    { |v| v },
+        boolean: Proc.new   { |v| ['true', '1', '1.0'].include? v }
     }
 
     class << self

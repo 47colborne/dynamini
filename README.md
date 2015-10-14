@@ -81,6 +81,7 @@ The following datatypes are supported by handle:
 * :float
 * :symbol
 * :datetime
+* :boolean
 * :string
 
 Note that the magic fields updated_at and created_at are handled as :datetime by default.

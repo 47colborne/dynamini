@@ -78,11 +78,11 @@ module Dynamini
       end
 
       def find_or_new(key)
-        response = client.get_item(table_name: table_name, key: {hash_key => key})
+        response = client.get_item(table_name: table_name, key: {hash_key => key.to_s})
         if response.item
           self.new(response.item.symbolize_keys, false)
         else
-          self.new(hash_key => key)
+          self.new(hash_key => key.to_s)
         end
       end
 

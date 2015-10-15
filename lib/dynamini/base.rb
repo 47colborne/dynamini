@@ -144,14 +144,14 @@ module Dynamini
       nil
     end
 
-    def update_attribute(key, value)
+    def update_attribute(key, value, options = {})
       write_attribute(key, value)
-      save!
+      save!(options)
     end
 
-    def update_attributes(attributes)
+    def update_attributes(attributes, options = {})
       assign_attributes(attributes)
-      save!
+      save!(options)
     end
 
     def save(options = {})

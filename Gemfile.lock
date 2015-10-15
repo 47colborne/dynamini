@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    dynamini (1.4.4)
+    dynamini (1.4.5)
       activemodel (>= 3, < 5.0)
       aws-sdk (~> 2)
 

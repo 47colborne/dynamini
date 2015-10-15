@@ -4,13 +4,16 @@ module Dynamini
     attr_reader :attributes
 
     BATCH_SIZE = 25
-    TRANSLATION_PROCS = {
+    GETTER_PROCS = {
         integer: Proc.new   { |v| v.to_i },
         datetime: Proc.new  { |v| Time.at(v.to_f) },
         float: Proc.new     { |v| v.to_f },
         symbol: Proc.new    { |v| v.to_sym },
         string: Proc.new    { |v| v },
         boolean: Proc.new   { |v| ['true', '1', '1.0'].include? v }
+    }
+    SETTER_PROCS = {
+        datetime: Proc.new  { |v| v.to_f }
     }
 
     class << self
@@ -30,7 +33,7 @@ module Dynamini
 
       def handle(column, format_class, options={})
         define_handled_getter(column, format_class, options)
-        define_handled_setter(column)
+        define_handled_setter(column, format_class)
       end
 
       def hash_key
@@ -282,7 +285,7 @@ module Dynamini
     end
 
     def self.define_handled_getter(column, format_class, options={})
-      proc = TRANSLATION_PROCS[format_class]
+      proc = GETTER_PROCS[format_class]
       raise 'Unsupported data type: ' + format_class.to_s if proc.nil?
       define_method(column) do
         if @attributes.has_key?(column)
@@ -293,11 +296,17 @@ module Dynamini
       end
     end
 
-    def self.define_handled_setter(column)
+    def self.define_handled_setter(column, format_class)
       setter_symbol = (column.to_s + '=').to_sym
-
-      define_method(setter_symbol) do |value|
-        write_attribute(column, value)
+      proc = SETTER_PROCS[format_class]
+      if proc
+        define_method(setter_symbol) do |value|
+          write_attribute(column, proc.call(value))
+        end
+      else
+        define_method(setter_symbol) do |value|
+          write_attribute(column, value)
+        end
       end
     end
 

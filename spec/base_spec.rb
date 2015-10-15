@@ -490,6 +490,13 @@ describe Dynamini::Base do
     it 'should default price to 0 if not set' do
       expect(handle_model.price).to eq 10
     end
+
+    it 'should store dates as float strings' do
+      handle_model.start_date = Time.now
+      expect(handle_model.attributes[:start_date]).to be_a(String)
+      expect(handle_model.attributes[:start_date].to_f > 1000000000).to be_truthy
+      expect(handle_model.start_date).to be_a(Time)
+    end
   end
 
   describe 'attributes' do

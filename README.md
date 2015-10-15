@@ -80,8 +80,8 @@ The following datatypes are supported by handle:
 * :integer
 * :float
 * :symbol
-* :datetime
 * :boolean
+* :datetime (for dates represented by ruby Time objects)
 * :string
 
 Note that the magic fields updated_at and created_at are handled as :datetime by default.

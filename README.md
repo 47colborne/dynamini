@@ -1,6 +1,11 @@
 ## Dynamini
 Dynamini is a lightweight DynamoDB interface designed as a drop-in replacement for ActiveRecord. This gem powers part of our stack at yroo.com.
 
+[![Build Status](https://travis-ci.org/47colborne/dynamini.svg?branch=master)](https://travis-ci.org/47colborne/dynamini)
+[![Code Climate](https://codeclimate.com/github/47colborne/dynamini/badges/gpa.svg)](https://codeclimate.com/github/47colborne/dynamini)
+[![Gem Version](https://badge.fury.io/rb/dynamini.png)](http://badge.fury.io/rb/dynamini)
+[![Dependency Status](https://gemnasium.com/47colborne/dynamini.svg)](https://gemnasium.com/47colborne/dynamini)
+
 ## The Basics
 This gem is an opinionated interface, meaning it's set up to let you use DynamoDB at its most efficient. That means traditional relational DB functions like WHERE, GROUP BY, and HAVING are not implemented, since using these defeats the performance gains realized by switching to Dynamo in the first place. It's intended to be simple to use, understand, and extend. The ideal use case for this gem is when you have an ActiveRecord->SQL table with way too much concurrent activity, resulting in constant table locking. After you've moved your data to Dynamo, and installed and configured this gem, the following ActiveRecord commands will still work for your model:
 

@@ -12,7 +12,7 @@ module Dynamini
 
     def update_item(args = {})
       table = args[:table_name]
-      updates = flatten_attribute_updates(args[:attribute_updates]).merge({hash_key => args[:key][hash_key]})
+      updates = flatten_attribute_updates(args).merge({hash_key => args[:key][hash_key]})
       @data[table] ||= {}
       if @data[table][args[:key][hash_key]].present?
         @data[table][args[:key][hash_key]].merge!(updates)
@@ -24,7 +24,7 @@ module Dynamini
     def get_item(args = {})
       table = args[:table_name]
       @data[table] ||= {}
-      attributes_hash = @data[table ][args[:key][hash_key]]
+      attributes_hash = @data[table][args[:key][hash_key]]
       item = attributes_hash.nil? ? nil : attributes_hash
       OpenStruct.new(item: item)
     end
@@ -64,11 +64,15 @@ module Dynamini
 
     private
 
-    def flatten_attribute_updates(attribute_updates)
+    def flatten_attribute_updates(args = {})
       attribute_hash = {}
 
-      attribute_updates.each do |k, v|
-        attribute_hash[k] = v[:value]
+      args[:attribute_updates].each do |k, v|
+        if v[:action] == 'ADD'
+          attribute_hash[k] = v[:value] + @data[args[:table_name]][args[:key][hash_key]][k].to_f
+        else
+          attribute_hash[k] = v[:value]
+        end
       end
       attribute_hash
     end

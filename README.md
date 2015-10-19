@@ -86,6 +86,7 @@ The following datatypes are supported by handle:
 * :float
 * :symbol
 * :boolean
+* :array
 * :datetime (for dates represented by ruby Time objects)
 * :string
 

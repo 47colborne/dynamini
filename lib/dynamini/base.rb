@@ -10,10 +10,12 @@ module Dynamini
         float: Proc.new     { |v| v.to_f },
         symbol: Proc.new    { |v| v.to_sym },
         string: Proc.new    { |v| v },
-        boolean: Proc.new   { |v| ['true', '1', '1.0'].include? v }
+        boolean: Proc.new   { |v| ['true', '1', '1.0'].include? v },
+        array: Proc.new     { |v| v ? JSON.parse(v) : [] }
     }
     SETTER_PROCS = {
-        datetime: Proc.new  { |v| v.to_f }
+        datetime: Proc.new  { |v| v.to_f },
+        array: Proc.new     { |v| v if v.is_a? Array }
     }
 
     class << self

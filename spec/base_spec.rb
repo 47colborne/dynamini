@@ -467,6 +467,7 @@ describe Dynamini::Base do
     class HandleModel < Dynamini::Base
       handle :price, :float, default: 10
       handle :start_date, :datetime
+      handle :list, :array
     end
 
     let(:handle_model){ HandleModel.new }
@@ -496,6 +497,15 @@ describe Dynamini::Base do
       expect(handle_model.attributes[:start_date]).to be_a(String)
       expect(handle_model.attributes[:start_date].to_f > 1000000000).to be_truthy
       expect(handle_model.start_date).to be_a(Time)
+    end
+
+    it 'should handle arrays and reject non-arrays' do
+      handle_model.list = 'foo'
+      expect(handle_model.list).to eq []
+      handle_model.list = '[12,24,48]'
+      expect(handle_model.list).to eq []
+      handle_model.list = [12,24,48]
+      expect(handle_model.list).to eq([12,24,48])
     end
   end
 

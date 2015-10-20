@@ -613,6 +613,39 @@ describe Dynamini::Base do
         end
       end
     end
+
+    describe '#key' do
+      context 'when using hash key only' do
+
+        before do
+          class TestClass < Dynamini::Base
+            set_hash_key :foo
+            self.in_memory = true
+          end
+        end
+
+        it 'should return an hash containing only the hash_key name and value' do
+          expect(TestClass.new(foo: 2).send(:key)).to eq({ foo: "2"})
+        end
+      end
+      context 'when using both hash_key and range_key' do
+
+        before do
+          class TestClass < Dynamini::Base
+            set_hash_key :foo
+            set_range_key :bar
+            self.in_memory = true
+          end
+        end
+
+        it 'should return an hash containing only the hash_key name and value' do
+          key_hash = TestClass.new(foo: 2, bar: 2015).send(:key)
+          expect(key_hash).to eq({ foo: "2", bar: "2015" })
+        end
+
+      end
+    end
+
   end
 end
 

@@ -31,6 +31,10 @@ module Dynamini
         @hash_key = key
       end
 
+      def set_range_key(key)
+        @range_key = key
+      end
+
       def handle(column, format_class, options={})
         define_handled_getter(column, format_class, options)
         define_handled_setter(column, format_class)
@@ -38,6 +42,10 @@ module Dynamini
 
       def hash_key
         @hash_key || :id
+      end
+
+      def range_key
+        @range_key
       end
 
       def in_memory
@@ -155,7 +163,7 @@ module Dynamini
     end
 
     def save(options = {})
-      @changed.empty? || valid? && trigger_save(options)
+      @changed.empty? || (valid? && trigger_save(options))
     end
 
     def save!(options = {})
@@ -250,7 +258,9 @@ module Dynamini
     end
 
     def key
-      {self.class.hash_key => @attributes[self.class.hash_key]}
+      key_hash = { self.class.hash_key => @attributes[self.class.hash_key] }
+      key_hash[self.class.range_key] = @attributes[self.class.range_key] if self.class.range_key
+      key_hash
     end
 
     def attribute_updates

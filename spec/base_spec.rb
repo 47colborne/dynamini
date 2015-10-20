@@ -101,6 +101,47 @@ describe Dynamini::Base do
       end
     end
 
+    describe '.increment!' do
+      context 'when incrementing a nil value' do
+        it 'should save' do
+          expect(model.class.client).to receive(:update_item).with(table_name: 'bases',
+                                                                   key: {id: model_attributes[:id]},
+                                                                   attribute_updates: hash_including({foo: {value: 5, action: 'ADD'}}))
+          model.increment!(:foo, 5)
+        end
+        it 'should update the value' do
+          model.increment!(:foo, 5)
+          expect(Dynamini::Base.find('abcd1234').foo.to_i).to eq 5
+        end
+      end
+      context 'when incrementing a numeric value' do
+        it 'should save' do
+          expect(model).to receive(:price).and_return(9.99)
+          expect(model.class.client).to receive(:update_item).with(table_name: 'bases',
+                                                                   key: {id: model_attributes[:id]},
+                                                                   attribute_updates: hash_including({price: {value: 5, action: 'ADD'}}))
+          model.increment!(:price, 5)
+
+        end
+        it 'should sum the values' do
+          expect(model).to receive(:price).and_return(9.99)
+          model.increment!(:price, 5)
+          expect(Dynamini::Base.find('abcd1234').price).to eq '14.99'
+        end
+      end
+      context 'when incrementing a non-numeric value' do
+        it 'should raise an error and not save' do
+          expect(model).to receive(:price).and_return('hello')
+          expect{model.increment!(:price, 5)}.to raise_error(StandardError)
+        end
+      end
+      context 'when incrementing with a non-numeric value' do
+        it 'should raise an error and not save' do
+          expect{model.increment!(:foo, 'bar')}.to raise_error(StandardError)
+        end
+      end
+    end
+
     describe '.enqueue_for_save' do
       before do
         Dynamini::Base.batch_write_queue = []
@@ -467,6 +508,7 @@ describe Dynamini::Base do
     class HandleModel < Dynamini::Base
       handle :price, :float, default: 10
       handle :start_date, :datetime
+      handle :list, :array
     end
 
     let(:handle_model){ HandleModel.new }
@@ -496,6 +538,15 @@ describe Dynamini::Base do
       expect(handle_model.attributes[:start_date]).to be_a(String)
       expect(handle_model.attributes[:start_date].to_f > 1000000000).to be_truthy
       expect(handle_model.start_date).to be_a(Time)
+    end
+
+    it 'should handle arrays and reject non-arrays' do
+      handle_model.list = 'foo'
+      expect(handle_model.list).to eq []
+      handle_model.list = '[12,24,48]'
+      expect(handle_model.list).to eq []
+      handle_model.list = [12,24,48]
+      expect(handle_model.list).to eq([12,24,48])
     end
   end
 

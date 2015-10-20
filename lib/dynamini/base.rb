@@ -10,10 +10,12 @@ module Dynamini
         float: Proc.new     { |v| v.to_f },
         symbol: Proc.new    { |v| v.to_sym },
         string: Proc.new    { |v| v },
-        boolean: Proc.new   { |v| ['true', '1', '1.0'].include? v }
+        boolean: Proc.new   { |v| ['true', '1', '1.0'].include? v },
+        array: Proc.new     { |v| v ? JSON.parse(v) : [] }
     }
     SETTER_PROCS = {
-        datetime: Proc.new  { |v| v.to_f }
+        datetime: Proc.new  { |v| v.to_f },
+        array: Proc.new     { |v| v if v.is_a? Array }
     }
 
     class << self
@@ -188,6 +190,19 @@ module Dynamini
       end
     end
 
+    def increment!(attribute, amount=1)
+      if amount.is_a?(Integer) || amount.is_a?(Float)
+        current_value = self.send(attribute)
+        if current_value.nil? || current_value.is_a?(Integer) || current_value.is_a?(Float)
+          increment_to_dynamo(attribute, amount)
+        else
+          raise StandardError, 'You cannot increment! a non-numeric non-nil value. If your current value is a numeric string, use :handle to autocast it as a number.'
+        end
+      else
+        raise StandardError, 'You cannot increment an attribute by a non-numeric value.'
+      end
+    end
+
     def delete
       delete_from_dynamo
       self
@@ -240,6 +255,10 @@ module Dynamini
 
     def delete_from_dynamo
       self.class.client.delete_item(table_name: self.class.table_name, key: key)
+    end
+
+    def increment_to_dynamo(attribute, amount)
+      self.class.client.update_item(table_name: self.class.table_name, key: key, attribute_updates: {attribute => {value: amount, action: 'ADD'}, updated_at: {value: attributes[:updated_at], action: 'PUT'}})
     end
 
     def self.dynamo_batch_get(key_structure)

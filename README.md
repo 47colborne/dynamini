@@ -38,6 +38,7 @@ There are also some new functions specific to DynamoDB's API:
 * batch_find([keys]) - to retrieve multiple objects at once.
 * enqueue_for_save(attributes) - to add your object to the batch write queue, which automatically sends a batch_save at length 25.
 * flush_queue! - to flush the batch_save queue early.
+* increment!(attribute, amount) - to use DynamoDB's Atomic Counter when you want multiple processes to increment the same field simultaneously. (For more information, see http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html#WorkingWithItems.AtomicCounters )
 
 ## Configuration
 In application.rb, or in initializers/dynamini.rb, include your AWS settings like so:
@@ -86,6 +87,7 @@ The following datatypes are supported by handle:
 * :float
 * :symbol
 * :boolean
+* :array
 * :datetime (for dates represented by ruby Time objects)
 * :string
 

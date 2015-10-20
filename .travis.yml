@@ -3,3 +3,9 @@ script: bundle exec rspec
 rvm:
 - 2.0.0
 - 2.2.1
+notifications:
+  email:
+    recipients:
+      - dev@retailcommon.com
+    on_success: change
+    on_failure: always

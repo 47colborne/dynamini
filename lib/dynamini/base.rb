@@ -19,10 +19,11 @@ module Dynamini
     }
 
     class << self
+
       attr_writer :batch_write_queue, :in_memory
 
       def table_name
-        @table_name || name.demodulize.downcase.pluralize
+        @table_name ||= name.demodulize.tableize
       end
 
       def set_table_name(name)
@@ -79,8 +80,9 @@ module Dynamini
         model if model.save!(options)
       end
 
-      def find(key)
-        response = client.get_item(table_name: table_name, key: {hash_key => key.to_s})
+      def find(hash_value, range_value = nil)
+        raise "Range key can not be blank" if range_key && range_value.nil?
+        response = client.get_item(table_name: table_name, key: create_key_hash(hash_value, range_value))
         raise 'Item not found.' unless response.item
         self.new(response.item.symbolize_keys, false)
       end
@@ -209,7 +211,7 @@ module Dynamini
     end
 
     def changes
-      @attributes.select { |attribute| @changed.include?(attribute.to_s) && attribute != self.class.hash_key }
+      @attributes.select { |attribute| @changed.include?(attribute.to_s) && attribute != self.class.hash_key && attribute != self.class.range_key }
     end
 
     def changed
@@ -279,6 +281,12 @@ module Dynamini
     def key
       key_hash = { self.class.hash_key => @attributes[self.class.hash_key] }
       key_hash[self.class.range_key] = @attributes[self.class.range_key] if self.class.range_key
+      key_hash
+    end
+
+    def self.create_key_hash(hash_value, range_value = nil)
+      key_hash = { self.hash_key => hash_value }
+      key_hash[self.range_key] = range_value if self.range_key
       key_hash
     end
 

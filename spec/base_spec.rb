@@ -16,6 +16,16 @@ describe Dynamini::Base do
     Dynamini::Base.client.reset
   end
 
+  describe '.set_table_name' do
+    before do
+      class TestClass < Dynamini::Base
+      end
+    end
+    it 'should' do
+      expect(TestClass.table_name).to eq('test_classes')
+    end
+  end
+
 
   describe '#configure' do
     before do

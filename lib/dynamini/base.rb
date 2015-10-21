@@ -192,11 +192,11 @@ module Dynamini
       end
     end
 
-    def increment!(attribute, amount=1)
+    def increment!(attribute, amount=1, opts = {})
       if amount.is_a?(Integer) || amount.is_a?(Float)
         current_value = self.send(attribute)
         if current_value.nil? || current_value.is_a?(Integer) || current_value.is_a?(Float)
-          increment_to_dynamo(attribute, amount)
+          increment_to_dynamo(attribute, amount, opts)
         else
           raise StandardError, 'You cannot increment! a non-numeric non-nil value. If your current value is a numeric string, use :handle to autocast it as a number.'
         end
@@ -259,8 +259,12 @@ module Dynamini
       self.class.client.delete_item(table_name: self.class.table_name, key: key)
     end
 
-    def increment_to_dynamo(attribute, amount)
-      self.class.client.update_item(table_name: self.class.table_name, key: key, attribute_updates: {attribute => {value: amount, action: 'ADD'}, updated_at: {value: attributes[:updated_at], action: 'PUT'}})
+    def increment_to_dynamo(attribute, amount, opts={})
+      if opts[:skip_timestamps]
+        self.class.client.update_item(table_name: self.class.table_name, key: key, attribute_updates: {attribute => {value: amount, action: 'ADD'}})
+      else
+        self.class.client.update_item(table_name: self.class.table_name, key: key, attribute_updates: {attribute => {value: amount, action: 'ADD'}, updated_at: {value: attributes[:updated_at], action: 'PUT'}})
+      end
     end
 
     def self.dynamo_batch_get(key_structure)

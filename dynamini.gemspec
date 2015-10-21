@@ -1,10 +1,10 @@
 Gem::Specification.new do |s|
   s.name        = 'dynamini'
-  s.version     = '1.5.0'
-  s.date        = '2015-10-15'
+  s.version     = '1.5.1'
+  s.date        = '2015-10-21'
   s.summary     = 'DynamoDB interface'
   s.description = 'Lightweight DynamoDB interface gem designed as a drop-in replacement for ActiveRecord. Built & maintained by the team at yroo.com.'
-  s.authors     = ['Greg Ward', 'David McHoull', 'Alishan Ladhani', 'Emily Fan', 'Justine Jones']
+  s.authors     = ['Greg Ward', 'David McHoull', 'Alishan Ladhani', 'Emily Fan', 'Justine Jones', 'Gillian Chesnais', 'Scott Chu', 'Jeff Li']
   s.email       = 'dev@retailcommon.com'
   s.files       = ['lib/dynamini.rb', 'lib/dynamini/base.rb', 'lib/dynamini/configuration.rb', 'lib/dynamini/test_client.rb']
   s.homepage    = 'https://github.com/47colborne/dynamini'

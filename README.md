@@ -7,7 +7,7 @@ Dynamini is a lightweight DynamoDB interface designed as a drop-in replacement f
 [![Dependency Status](https://gemnasium.com/47colborne/dynamini.svg)](https://gemnasium.com/47colborne/dynamini)
 
 ## The Basics
-This gem is an opinionated interface, meaning it's set up to let you use DynamoDB at its most efficient. That means traditional relational DB functions like WHERE, GROUP BY, and HAVING are not implemented, since using these defeats the performance gains realized by switching to Dynamo in the first place. It's intended to be simple to use, understand, and extend. The ideal use case for this gem is when you have an ActiveRecord->SQL table with way too much concurrent activity, resulting in constant table locking. After you've moved your data to Dynamo, and installed and configured this gem, the following ActiveRecord commands will still work for your model:
+This gem provides an opinionated interface, set up to let you use Amazon's DynamoDB at its most efficient. That means traditional relational DB functions like WHERE, GROUP BY, and HAVING aren't provided, since these trigger table scans that defeat the performance gains realized by switching to Dynamo in the first place. Use this gem when you have an relational table with too much concurrent activity, resulting in constant table locking. After you've moved your data to Dynamo, and installed and configured Dynamini, the following ActiveRecord functions will be preserved:
 
 Class methods:
 * create(attributes)
@@ -37,7 +37,7 @@ There are also some new functions specific to DynamoDB's API:
 
 * batch_find([keys]) - to retrieve multiple objects at once.
 * enqueue_for_save(attributes) - to add your object to the batch write queue, which automatically sends a batch_save at length 25.
-* flush_queue! - to flush the batch_save queue early.
+* flush_queue! - to send the items in batch_save queue before reaching length 25.
 * increment!({attribute1: amount, attribute2: amount}) - to update your record using DynamoDB's Atomic Counter functionality. (For more information, see http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html#WorkingWithItems.AtomicCounters )
 
 ## Configuration
@@ -63,21 +63,21 @@ end
 ```
 
 ## Datatype Handling
-The Dynamo Ruby SDK stores and retrieves all fields as strings. This can be inconvenient for numeric fields or dates, since you'll have to convert them to the correct type after retrieval. Dynamini supports automatic type conversion, allowing you to save non-string attributes to your model and retrieve them as the correct datatype later. If you want to see the stringified version sent to and from the database, just check the attributes hash. You can also specify default values for your fields. Here's how you set it up:
+The Dynamo Ruby SDK retrieves all fields as strings by default. This can be inconvenient for numeric fields or dates, since you'll have to convert them to the correct type after retrieval. Dynamini supports automatic type conversion, allowing you to save non-string attributes to your model and retrieve them as the correct datatype later. If you want to see the stringified version returned by the database, just check the attributes hash. You can also specify default values for your fields. Here's how you set it up:
 
 ```ruby
 class Vehicle < Dynamini::Base
+    set_hash_key :vin
     handle :top_speed, :integer, default: 80
 end
 
-car = Vehicle.new
+car = Vehicle.new(vin: '43H1R')
 car.top_speed
 > 80
 car.top_speed = 90
-car.top_speed
+Vehicle.find('43H1R').top_speed
 > 90
-car.attributes
-> { top_speed: '90' }
+# This would be '90' without the handle helper.
 ```
 
 Defaults are optional - without a default, a handled field without a value assigned to it will return nil like any other field.
@@ -123,13 +123,11 @@ config.after(:each) {
 * You can also write any arbitrary attribute to your model.
 * Other models in your app cannot have a has_one or has_many relationship with your Dynamini model, since these would require a table scan. Your other models can still use belongs_to.
 * If you change the primary key value on an instance of your model, then resave it, you'll have two copies in your database.
-* The primary key is saved as a string. If you use stringified integers, your relationships should work normally,
- but if you use non-numeric strings for your keys, remember to change your foreign key columns on related objects to be string type.
+* If you use non-numeric strings for your primary key, remember to change your foreign key columns on related objects to be string type.
 * You might want to conditionally set the table name for your model based on the Rails.env, enabling separate tables for development and production.
 
 ## Coming Soon
 * Support for range keys
-
 
 ## Contributing
 

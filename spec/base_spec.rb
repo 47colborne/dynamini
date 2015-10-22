@@ -2,7 +2,14 @@ require 'spec_helper'
 
 
 describe Dynamini::Base do
-  let(:model_attributes) { {name: 'Widget', price: '9.99', id: 'abcd1234', hash_key: '009'} }
+  let(:model_attributes) {
+    {
+        name: 'Widget',
+        price: '9.99',
+        id: 'abcd1234',
+        hash_key: '009'
+    }
+  }
 
   subject(:model) { Dynamini::Base.new(model_attributes) }
 
@@ -26,7 +33,6 @@ describe Dynamini::Base do
     end
   end
 
-
   describe '#configure' do
     before do
       Dynamini.configure do |config|
@@ -48,11 +54,10 @@ describe Dynamini::Base do
 
   describe 'operations' do
 
-
     describe '.new' do
       let(:dirty_model) { Dynamini::Base.new(model_attributes) }
 
-      it 'should append all initial attributes to @changed, including hash_key' do
+      it 'should append all initial attrs to @changed, including hash_key' do
         expect(dirty_model.changed).to eq(model_attributes.keys.map(&:to_s))
       end
 
@@ -94,7 +99,7 @@ describe Dynamini::Base do
 
       context 'when the object does not exist' do
         it 'should raise an error' do
-          expect { Dynamini::Base.find('foo') }.to raise_error 'Item not found.'
+          expect { Dynamini::Base.find('f') }.to raise_error 'Item not found.'
         end
 
       end
@@ -105,7 +110,7 @@ describe Dynamini::Base do
         end
 
         it 'should return the object as an instance of the subclass' do
-          Foo.create({id: '1'})
+          Foo.create(id: '1')
           expect(Foo.find('1')).to be_a Foo
         end
       end
@@ -114,9 +119,16 @@ describe Dynamini::Base do
     describe '.increment!' do
       context 'when incrementing a nil value' do
         it 'should save' do
-          expect(model.class.client).to receive(:update_item).with(table_name: 'bases',
-                                                                   key: {id: model_attributes[:id]},
-                                                                   attribute_updates: hash_including({foo: {value: 5, action: 'ADD'}}))
+          expect(model.class.client).to receive(:update_item).with(
+                                            table_name: 'bases',
+                                            key: { id: model_attributes[:id] },
+                                            attribute_updates: hash_including(
+                                                foo: {
+                                                    value: 5,
+                                                    action: 'ADD'
+                                                }
+                                            )
+                                        )
           model.increment!(foo: 5)
         end
         it 'should update the value' do
@@ -127,9 +139,16 @@ describe Dynamini::Base do
       context 'when incrementing a numeric value' do
         it 'should save' do
           expect(model).to receive(:price).and_return(9.99)
-          expect(model.class.client).to receive(:update_item).with(table_name: 'bases',
-                                                                   key: {id: model_attributes[:id]},
-                                                                   attribute_updates: hash_including({price: {value: 5, action: 'ADD'}}))
+          expect(model.class.client).to receive(:update_item).with(
+                                            table_name: 'bases',
+                                            key: {id: model_attributes[:id]},
+                                            attribute_updates: hash_including(
+                                                price: {
+                                                    value: 5,
+                                                    action: 'ADD'
+                                                }
+                                            )
+                                        )
           model.increment!(price: 5)
 
         end
@@ -142,12 +161,12 @@ describe Dynamini::Base do
       context 'when incrementing a non-numeric value' do
         it 'should raise an error and not save' do
           expect(model).to receive(:price).and_return('hello')
-          expect{model.increment!(price: 5)}.to raise_error(StandardError)
+          expect{ model.increment!(price: 5) }.to raise_error(StandardError)
         end
       end
       context 'when incrementing with a non-numeric value' do
         it 'should raise an error and not save' do
-          expect{model.increment!(foo: 'bar')}.to raise_error(StandardError)
+          expect{ model.increment!(foo: 'bar') }.to raise_error(StandardError)
         end
       end
       context 'when incrementing multiple values' do
@@ -160,7 +179,7 @@ describe Dynamini::Base do
         end
       end
       context 'when incrementing a new record' do
-        it 'should save the record and initialize the values and timestamps' do
+        it 'should save the record and init the values and timestamps' do
           Dynamini::Base.new(id: 1, foo: 'bar').increment!(baz: 1)
           found_model = Dynamini::Base.find('1')
           expect(found_model.baz).to eq '1'
@@ -176,7 +195,9 @@ describe Dynamini::Base do
       end
       context 'when enqueuing a valid object' do
         it 'should return true' do
-          expect(Dynamini::Base.enqueue_for_save(model_attributes)).to eq true
+          expect(
+              Dynamini::Base.enqueue_for_save(model_attributes)
+          ).to eq true
         end
         it 'should append the object to the batch_write_queue' do
           Dynamini::Base.enqueue_for_save(model_attributes)
@@ -185,7 +206,7 @@ describe Dynamini::Base do
       end
 
       context 'when enqueuing an invalid object' do
-        let(:bad_attributes) { {name: 'bad', id: nil} }
+        let(:bad_attributes) { { name: 'bad', id: nil } }
         before do
           allow_any_instance_of(Dynamini::Base).to receive(:valid?).and_return(false)
         end
@@ -226,7 +247,9 @@ describe Dynamini::Base do
       end
       it 'should send the contents of the queue to dynamo_batch_save' do
         Dynamini::Base.enqueue_for_save(model_attributes)
-        expect(Dynamini::Base).to receive(:dynamo_batch_save).with(Dynamini::Base.batch_write_queue)
+        expect(Dynamini::Base).to receive(:dynamo_batch_save).with(
+                                      Dynamini::Base.batch_write_queue
+                                  )
         Dynamini::Base.flush_queue!
       end
     end
@@ -258,9 +281,9 @@ describe Dynamini::Base do
       end
       context 'when requesting too many items' do
         it 'should raise an error' do
-          array = []
-          150.times { array << 'foo' }
-          expect { Dynamini::Base.batch_find(array) }.to raise_error StandardError
+          a = []
+          150.times { a << 'foo' }
+          expect { Dynamini::Base.batch_find(a) }.to raise_error StandardError
         end
       end
     end
@@ -279,8 +302,14 @@ describe Dynamini::Base do
     end
 
     describe '#==' do
-      let(:model_a) { Dynamini::Base.new(model_attributes).tap { |model| model.send(:clear_changes) } }
-      let(:model_attributes_d) { {name: 'Widget', price: 9.99, hash_key: '007'} }
+      let(:model_a) { Dynamini::Base.new(model_attributes).tap {
+          |model| model.send(:clear_changes)
+      } }
+      let(:model_attributes_d) { {
+          name: 'Widget',
+          price: 9.99,
+          hash_key: '007'
+      } }
 
       context 'when the object is reflexive ( a = a )' do
         it 'it should return true' do
@@ -305,7 +334,9 @@ describe Dynamini::Base do
 
       context 'when the object attributes are different' do
         it 'should return false' do
-          model_d = Dynamini::Base.new(model_attributes_d).tap { |model| model.send(:clear_changes) }
+          model_d = Dynamini::Base.new(model_attributes_d).tap {
+              |model| model.send(:clear_changes)
+          }
           expect(model_a.==(model_d)).to be_falsey
         end
       end
@@ -353,9 +384,16 @@ describe Dynamini::Base do
 
         context 'something has changed' do
           it 'should call update_item with the changed attributes' do
-            expect(model.class.client).to receive(:update_item).with(table_name: 'bases',
-                                                         key: {id: model_attributes[:id]},
-                                                         attribute_updates: hash_including({price: {value: '5', action: 'PUT'}}))
+            expect(model.class.client).to receive(:update_item).with(
+                                              table_name: 'bases',
+                                              key: { id: model_attributes[:id] },
+                                              attribute_updates: hash_including(
+                                                  price: {
+                                                      value: '5',
+                                                      action: 'PUT'
+                                                  }
+                                              )
+                                          )
             model.price = '5'
             model.save
           end
@@ -369,9 +407,16 @@ describe Dynamini::Base do
 
         context 'when a blank field has been added' do
           it 'should suppress any blank keys' do
-            expect(model.class.client).to receive(:update_item).with(table_name: 'bases',
-                                                         key: {id: model_attributes[:id]},
-                                                         attribute_updates: hash_not_including({foo: {value: '', action: 'PUT'}}))
+            expect(model.class.client).to receive(:update_item).with(
+                                              table_name: 'bases',
+                                              key: { id: model_attributes[:id] },
+                                              attribute_updates: hash_not_including(
+                                                  foo: {
+                                                      value: '',
+                                                      action: 'PUT'
+                                                  }
+                                              )
+                                          )
             model.foo = ''
             model.bar = 4
             model.save
@@ -409,15 +454,13 @@ describe Dynamini::Base do
           expect(model.save!(validate: false)).to eq true
         end
       end
-
     end
-
 
     describe '#delete' do
       context 'when the item exists in the DB' do
         it 'should delete the item and return the item' do
           expect(model.delete).to eq(model)
-          expect{ Dynamini::Base.find(model.id) }.to raise_error 'Item not found.'
+          expect{ Dynamini::Base.find(model.id) }.to raise_error ('Item not found.')
         end
       end
       context 'when the item does not exist in the DB' do
@@ -426,15 +469,21 @@ describe Dynamini::Base do
         end
       end
     end
-
   end
 
   describe '#touch' do
     it 'should only send the updated time timestamp to the client' do
       allow(Time).to receive(:now).and_return 1
-      expect(model.class.client).to receive(:update_item).with(table_name: 'bases',
-                                                   key: {id: model_attributes[:id]},
-                                                   attribute_updates: {updated_at: {value: 1, action: 'PUT'}})
+      expect(model.class.client).to receive(:update_item).with(
+                                        table_name: 'bases',
+                                        key: { id: model_attributes[:id] },
+                                        attribute_updates: {
+                                            updated_at: {
+                                                value: 1,
+                                                action: 'PUT'
+                                            }
+                                        }
+                                    )
       model.touch
     end
 
@@ -481,13 +530,14 @@ describe Dynamini::Base do
     context 'new record' do
       it 'should set created and updated time to current time' do
         new_model = Dynamini::Base.create(id: '6789')
-        expect(new_model.created_at.to_s).to eq(time.to_s)  # stringify to handle floating point rounding issue
+        # stringify to handle floating point rounding issue
+        expect(new_model.created_at.to_s).to eq(time.to_s)
         expect(new_model.updated_at.to_s).to eq(time.to_s)
       end
     end
     context 'existing record' do
       it 'should set updated time but not created time' do
-        existing_model = Dynamini::Base.new({name: 'foo'}, false)
+        existing_model = Dynamini::Base.new({ name: 'foo' }, false)
         existing_model.price = 5
         existing_model.save
         expect(existing_model.updated_at.to_s).to eq(time.to_s)
@@ -512,8 +562,6 @@ describe Dynamini::Base do
         expect(existing_model.created_at.to_s).to_not eq(time.to_s)
       end
     end
-
-
   end
 
   describe 'table config' do
@@ -547,11 +595,6 @@ describe Dynamini::Base do
       handle_model.price
     end
 
-    it 'should store handled attributes as strings in the attributes hash' do
-      handle_model.price = 5.2
-      expect(handle_model.attributes).to include(price: '5.2')
-    end
-
     it 'should retrieve price as a float' do
       handle_model.price = '5.2'
       expect(handle_model.price).to be_a(Float)
@@ -561,20 +604,20 @@ describe Dynamini::Base do
       expect(handle_model.price).to eq 10
     end
 
-    it 'should store dates as float strings' do
+    it 'should store dates as floats' do
       handle_model.start_date = Time.now
-      expect(handle_model.attributes[:start_date]).to be_a(String)
-      expect(handle_model.attributes[:start_date].to_f > 1000000000).to be_truthy
+      expect(handle_model.attributes[:start_date]).to be_a(Float)
+      expect(handle_model.attributes[:start_date] > 1_000_000_000).to be_truthy
       expect(handle_model.start_date).to be_a(Time)
     end
 
     it 'should handle arrays and reject non-arrays' do
       handle_model.list = 'foo'
       expect(handle_model.list).to eq []
-      handle_model.list = '[12,24,48]'
+      handle_model.list = '[12, 24, 48]'
       expect(handle_model.list).to eq []
-      handle_model.list = [12,24,48]
-      expect(handle_model.list).to eq([12,24,48])
+      handle_model.list = [12, 24, 48]
+      expect(handle_model.list).to eq([12, 24, 48])
     end
   end
 
@@ -662,7 +705,7 @@ describe Dynamini::Base do
 
     describe '#changed' do
       context 'no change detected' do
-        before { model.price = 9.99 }
+        before { model.price = '9.99' }
         it 'should return an empty array' do
           expect(model.changed).to be_empty
         end
@@ -704,7 +747,7 @@ describe Dynamini::Base do
         end
 
         it 'should return an hash containing only the hash_key name and value' do
-          expect(TestClass.new(foo: 2).send(:key)).to eq({ foo: "2"})
+          expect(TestClass.new(foo: 2).send(:key)).to eq(foo: 2)
         end
       end
       context 'when using both hash_key and range_key' do
@@ -719,12 +762,11 @@ describe Dynamini::Base do
 
         it 'should return an hash containing only the hash_key name and value' do
           key_hash = TestClass.new(foo: 2, bar: 2015).send(:key)
-          expect(key_hash).to eq({ foo: "2", bar: "2015" })
+          expect(key_hash).to eq(foo: 2, bar: 2015)
         end
 
       end
     end
-
   end
 end
 

@@ -1,26 +1,27 @@
 module Dynamini
+  # Core db interface class.
   class Base
     include ActiveModel::Validations
     attr_reader :attributes
 
     BATCH_SIZE = 25
     GETTER_PROCS = {
-        integer: Proc.new   { |v| v.to_i },
-        datetime: Proc.new  { |v| Time.at(v.to_f) },
-        float: Proc.new     { |v| v.to_f },
-        symbol: Proc.new    { |v| v.to_sym },
-        string: Proc.new    { |v| v },
-        boolean: Proc.new   { |v| ['true', '1', '1.0'].include? v },
-        array: Proc.new     { |v| v ? JSON.parse(v) : [] }
+        integer:  proc { |v| v.to_i },
+        datetime: proc { |v| Time.at(v.to_f) },
+        float:    proc { |v| v.to_f },
+        symbol:   proc { |v| v.to_sym },
+        string:   proc { |v| v },
+        boolean:  proc { |v| ['true', '1', '1.0'].include? v },
+        array:    proc { |v| v ? (v.is_a?(String) ? JSON.parse(v) : v) : [] }
     }
     SETTER_PROCS = {
-        datetime: Proc.new  { |v| v.to_f },
-        array: Proc.new     { |v| v if v.is_a? Array }
+        datetime: proc { |v| v.to_f },
+        array: proc { |v| v if v.is_a? Array }
     }
 
     class << self
-
       attr_writer :batch_write_queue, :in_memory
+      attr_reader :range_key
 
       def table_name
         @table_name ||= name.demodulize.tableize
@@ -38,17 +39,13 @@ module Dynamini
         @range_key = key
       end
 
-      def handle(column, format_class, options={})
+      def handle(column, format_class, options = {})
         define_handled_getter(column, format_class, options)
         define_handled_setter(column, format_class)
       end
 
       def hash_key
         @hash_key || :id
-      end
-
-      def range_key
-        @range_key
       end
 
       def in_memory
@@ -66,57 +63,56 @@ module Dynamini
           @client ||= Aws::DynamoDB::Client.new(
               region: Dynamini.configuration.region,
               access_key_id: Dynamini.configuration.access_key_id,
-              secret_access_key: Dynamini.configuration.secret_access_key)
+              secret_access_key: Dynamini.configuration.secret_access_key
+          )
         end
       end
 
-      def create(attributes, options={})
-        model = self.new(attributes, true)
+      def create(attributes, options = {})
+        model = new(attributes, true)
         model if model.save(options)
       end
 
-      def create!(attributes, options={})
-        model = self.new(attributes, true)
+      def create!(attributes, options = {})
+        model = new(attributes, true)
         model if model.save!(options)
       end
 
       def find(hash_value, range_value = nil)
-        raise "Range key can not be blank" if range_key && range_value.nil?
+        fail 'Range key cannot be blank.' if range_key && range_value.nil?
         response = client.get_item(table_name: table_name, key: create_key_hash(hash_value, range_value))
         raise 'Item not found.' unless response.item
-        self.new(response.item.symbolize_keys, false)
+        new(response.item.symbolize_keys, false)
       end
 
       def exists?(key)
-        response = client.get_item(table_name: table_name, key: {hash_key => key.to_s})
-        response.item.present?
+        r = client.get_item(table_name: table_name, key: { hash_key => key.to_s })
+        r.item.present?
       end
 
       def find_or_new(key)
-        response = client.get_item(table_name: table_name, key: {hash_key => key.to_s})
-        if response.item
-          self.new(response.item.symbolize_keys, false)
+        r = client.get_item(table_name: table_name, key: { hash_key => key.to_s })
+        if r.item
+          new(r.item.symbolize_keys, false)
         else
-          self.new(hash_key => key.to_s)
+          new(hash_key => key.to_s)
         end
       end
 
       def batch_find(ids = [])
         return [] if ids.length < 1
         objects = []
-        if ids.length > 100
-          raise StandardError, 'Batch find is limited to 100 items'
-        end
+        fail StandardError, 'Batch is limited to 100 items' if ids.length > 100
         key_structure = ids.map { |i| { hash_key => i.to_s } }
-        response = self.dynamo_batch_get(key_structure)
+        response = dynamo_batch_get(key_structure)
         response.responses[table_name].each do |item|
-          objects << self.new(item.symbolize_keys, false)
+          objects << new(item.symbolize_keys, false)
         end
         objects
       end
 
       def enqueue_for_save(attributes, options = {})
-        model = self.new(attributes, true)
+        model = new(attributes, true)
         model.generate_timestamps! unless options[:skip_timestamps]
         if model.valid?
           batch_write_queue << model
@@ -127,7 +123,7 @@ module Dynamini
       end
 
       def flush_queue!
-        response = self.dynamo_batch_save(batch_write_queue)
+        response = dynamo_batch_save(batch_write_queue)
         self.batch_write_queue = []
         response
       end
@@ -136,7 +132,7 @@ module Dynamini
 
     #### Instance Methods
 
-    def initialize(attributes={}, new_record = true)
+    def initialize(attributes = {}, new_record = true)
       @changed = Set.new
       @new_record = new_record
       @attributes = {}
@@ -146,9 +142,8 @@ module Dynamini
       end
     end
 
-
-    def ==(object)
-      hash_key == object.hash_key if object.is_a?(self.class)
+    def ==(other)
+      hash_key == other.hash_key if other.is_a?(self.class)
     end
 
     def assign_attributes(attributes)
@@ -173,8 +168,7 @@ module Dynamini
     end
 
     def save!(options = {})
-
-      options[:validate]= true if options[:validate].nil?
+      options[:validate] = true if options[:validate].nil?
 
       unless @changed.empty?
         if (options[:validate] && valid?) || !options[:validate]
@@ -207,7 +201,10 @@ module Dynamini
     end
 
     def changes
-      @attributes.select { |attribute| @changed.include?(attribute.to_s) && attribute != self.class.hash_key && attribute != self.class.range_key }
+      @attributes.select { |attribute| @changed.include?(attribute.to_s) &&
+          attribute != self.class.hash_key &&
+          attribute != self.class.range_key
+      }
     end
 
     def changed
@@ -239,34 +236,57 @@ module Dynamini
     end
 
     def generate_timestamps!
-      self.updated_at= Time.now.to_f
-      self.created_at= Time.now.to_f if new_record?
+      self.updated_at = Time.now.to_f
+      self.created_at = Time.now.to_f if new_record?
     end
 
     def save_to_dynamo
-      self.class.client.update_item(table_name: self.class.table_name, key: key, attribute_updates: attribute_updates)
+      self.class.client.update_item(
+          table_name: self.class.table_name,
+          key: key,
+          attribute_updates: attribute_updates
+      )
     end
 
     def touch_to_dynamo
-      self.class.client.update_item(table_name: self.class.table_name, key: key, attribute_updates: {updated_at: {value: Time.now.to_f, action: 'PUT'}})
+      self.class.client.update_item(
+          table_name: self.class.table_name,
+          key: key,
+          attribute_updates:
+              { updated_at:
+                   { value: Time.now.to_f,
+                    action: 'PUT'
+                   }
+              }
+      )
     end
 
     def delete_from_dynamo
       self.class.client.delete_item(table_name: self.class.table_name, key: key)
     end
 
-    def increment_to_dynamo(attribute_increments, opts={})
-      self.class.client.update_item(table_name: self.class.table_name, key: key, attribute_updates: increment_updates(attribute_increments, opts))
+    def increment_to_dynamo(attribute_increments, opts = {})
+      self.class.client.update_item(
+          table_name: self.class.table_name,
+          key: key,
+          attribute_updates: increment_updates(attribute_increments, opts)
+      )
     end
 
-    def self.dynamo_batch_get(key_structure)
-      client.batch_get_item(request_items: {table_name => {keys: key_structure}})
+    def self.dynamo_batch_get(key_struct)
+      client.batch_get_item(
+          request_items: {
+              table_name => { keys: key_struct }
+          }
+      )
     end
 
     def self.dynamo_batch_save(model_array)
       put_requests = []
       model_array.each do |model|
-        put_requests << { put_request: { item: model.attributes.reject{|_k, v| v.blank? }.stringify_keys } }
+        put_requests << { put_request: {
+            item: model.attributes.reject{ |_k, v| v.blank? }.stringify_keys
+        } }
       end
       request_options = { request_items: {
           "#{table_name}" => put_requests }
@@ -293,13 +313,13 @@ module Dynamini
       end
     end
 
-    def increment_updates(attribute_increments, opts={})
+    def increment_updates(attribute_increments, opts = {})
       updates = {}
       attribute_increments.each do |k,v|
-        updates[k] = {value: v, action: 'ADD'}
+        updates[k] = { value: v, action: 'ADD' }
       end
-      updates[:updated_at] = {value: Time.now.to_f, action: 'PUT'} unless opts[:skip_timestamps]
-      updates[:created_at] = {value: Time.now.to_f, action: 'PUT'} unless attributes[:created_at]
+      updates[:updated_at] = { value: Time.now.to_f, action: 'PUT' } unless opts[:skip_timestamps]
+      updates[:created_at] = { value: Time.now.to_f, action: 'PUT' } unless attributes[:created_at]
       updates
     end
 
@@ -307,10 +327,14 @@ module Dynamini
       if value.is_a?(Integer) || value.is_a?(Float)
         current_value = self.send(attribute)
         unless current_value.nil? || current_value.is_a?(Integer) || current_value.is_a?(Float)
-          raise StandardError, "You cannot increment a non-numeric non-nil value: #{attribute} is currently #{current_value}. If your current value is a numeric string, use :handle to autocast it as a number."
+          fail StandardError, "Cannot increment a non-numeric non-nil value:
+                                #{attribute} is currently #{current_value}.
+                                If your current value is a numeric string,
+                                use :handle to autocast it as a number."
         end
       else
-        raise StandardError, "You cannot increment an attribute by a non-numeric value: #{value}"
+        fail StandardError, "You cannot increment an attribute by a
+                              non-numeric value: #{value}"
       end
     end
 
@@ -338,11 +362,11 @@ module Dynamini
       name =~ /^([a-zA-Z][-_\w]*)=.*$/
     end
 
-    def self.define_handled_getter(column, format_class, options={})
+    def self.define_handled_getter(column, format_class, options = {})
       proc = GETTER_PROCS[format_class]
-      raise 'Unsupported data type: ' + format_class.to_s if proc.nil?
+      fail 'Unsupported data type: ' + format_class.to_s if proc.nil?
       define_method(column) do
-        if @attributes.has_key?(column)
+        if @attributes.key?(column)
           proc.call(read_attribute(column))
         else
           options[:default] || nil
@@ -364,14 +388,14 @@ module Dynamini
       end
     end
 
-    def respond_to_missing?(name, include_private=false)
+    def respond_to_missing?(name, include_private = false)
       @attributes.keys.include?(name) || write_method?(name) || super
     end
 
-    def write_attribute(attribute, new_value, record_change=true)
+    def write_attribute(attribute, new_value, record_change = true)
       old_value = @attributes[attribute]
-      @attributes[attribute] = (new_value.nil? ? nil : new_value.to_s)
-      record_change(attribute, new_value.to_s, old_value) if record_change
+      @attributes[attribute] = (new_value.nil? ? nil : new_value)
+      record_change(attribute, new_value, old_value) if record_change
     end
 
     def record_change(attribute, new_value, old_value)

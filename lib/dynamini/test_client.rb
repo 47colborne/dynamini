@@ -1,6 +1,7 @@
 module Dynamini
   require 'ostruct'
 
+  # In-memory database client for test purposes.
   class TestClient
 
     attr_reader :hash_key
@@ -12,12 +13,14 @@ module Dynamini
 
     def update_item(args = {})
       table = args[:table_name]
-      updates = flatten_attribute_updates(args).merge({hash_key => args[:key][hash_key]})
+      updates = flatten_attribute_updates(args).merge(
+          hash_key => args[:key][hash_key].to_s
+      )
       @data[table] ||= {}
-      if @data[table][args[:key][hash_key]].present?
-        @data[table][args[:key][hash_key]].merge!(updates)
+      if @data[table][args[:key][hash_key].to_s].present?
+        @data[table][args[:key][hash_key].to_s].merge!(updates)
       else
-        @data[table][args[:key][hash_key]] = updates
+        @data[table][args[:key][hash_key].to_s] = updates
       end
     end
 
@@ -68,14 +71,14 @@ module Dynamini
       attribute_hash = {}
 
       args[:attribute_updates].each do |k, v|
-        if v[:action] == 'ADD' && @data[args[:table_name]][args[:key][hash_key]] #if record has been saved
-          attribute_hash[k] = v[:value] + @data[args[:table_name]][args[:key][hash_key]][k].to_f
+        if v[:action] == 'ADD' && @data[args[:table_name]][args[:key][hash_key]]
+          # if record has been saved
+          attribute_hash[k] = (v[:value] + @data[args[:table_name]][args[:key][hash_key]][k].to_f).to_s
         else
-          attribute_hash[k] = v[:value]
+          attribute_hash[k] = v[:value].to_s
         end
       end
       attribute_hash
     end
-
   end
 end

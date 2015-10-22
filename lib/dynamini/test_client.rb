@@ -4,7 +4,7 @@ module Dynamini
   # In-memory database client for test purposes.
   class TestClient
 
-    attr_reader :hash_key
+    attr_reader :hash_key, :data
 
     def initialize(hash_key)
       @data = {}

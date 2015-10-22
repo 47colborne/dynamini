@@ -11,7 +11,7 @@ module Dynamini
         float:    proc { |v| v.to_f },
         symbol:   proc { |v| v.to_sym },
         string:   proc { |v| v },
-        boolean:  proc { |v| ['true', '1', '1.0'].include? v },
+        boolean:  proc { |v| [true, 'true', '1', '1.0'].include? v },
         array:    proc { |v| v ? (v.is_a?(String) ? JSON.parse(v) : v) : [] }
     }
     SETTER_PROCS = {
@@ -91,6 +91,7 @@ module Dynamini
       end
 
       def find_or_new(key)
+        fail 'Key cannot be blank.' if (key.nil? || key == '')
         r = client.get_item(table_name: table_name, key: { hash_key => key.to_s })
         if r.item
           new(r.item.symbolize_keys, false)

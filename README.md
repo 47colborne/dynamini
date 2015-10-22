@@ -75,6 +75,7 @@ car = Vehicle.new(vin: '43H1R')
 car.top_speed
 > 80
 car.top_speed = 90
+car.save
 Vehicle.find('43H1R').top_speed
 > 90
 # This would be '90' without the handle helper.

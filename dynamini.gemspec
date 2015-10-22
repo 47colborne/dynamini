@@ -8,8 +8,8 @@ Gem::Specification.new do |s|
   s.authors     = ['Greg Ward', 'David McHoull', 'Alishan Ladhani', 'Emily Fan',
                    'Justine Jones', 'Gillian Chesnais', 'Scott Chu', 'Jeff Li']
   s.email       = 'dev@retailcommon.com'
-  s.files       = %w('lib/dynamini.rb', 'lib/dynamini/base.rb',
-                   'lib/dynamini/configuration.rb', 'lib/dynamini/test_client.rb')
+  s.files       = %w(lib/dynamini.rb lib/dynamini/base.rb
+                  lib/dynamini/configuration.rb lib/dynamini/test_client.rb)
   s.homepage    = 'https://github.com/47colborne/dynamini'
   s.platform    = Gem::Platform::RUBY
   s.license     = 'MIT'

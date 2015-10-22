@@ -1,3 +1,4 @@
+### Central module for Dynamini.
 module Dynamini
   require 'active_model'
   require 'dynamini/base'

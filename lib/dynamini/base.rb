@@ -104,8 +104,10 @@ module Dynamini
       def batch_find(ids = [])
         return [] if ids.length < 1
         objects = []
-        raise StandardError, 'Batch find is limited to 100 items' if ids.length > 100
-        key_structure = ids.map { |i| {hash_key => i.to_s} }
+        if ids.length > 100
+          raise StandardError, 'Batch find is limited to 100 items'
+        end
+        key_structure = ids.map { |i| { hash_key => i.to_s } }
         response = self.dynamo_batch_get(key_structure)
         response.responses[table_name].each do |item|
           objects << self.new(item.symbolize_keys, false)
@@ -192,17 +194,11 @@ module Dynamini
       end
     end
 
-    def increment!(attribute, amount=1, opts = {})
-      if amount.is_a?(Integer) || amount.is_a?(Float)
-        current_value = self.send(attribute)
-        if current_value.nil? || current_value.is_a?(Integer) || current_value.is_a?(Float)
-          increment_to_dynamo(attribute, amount, opts)
-        else
-          raise StandardError, 'You cannot increment! a non-numeric non-nil value. If your current value is a numeric string, use :handle to autocast it as a number.'
-        end
-      else
-        raise StandardError, 'You cannot increment an attribute by a non-numeric value.'
+    def increment!(attribute_increments, opts = {})
+      attribute_increments.each do |a, v|
+        validate_incrementable_attribute(a, v)
       end
+      increment_to_dynamo(attribute_increments, opts)
     end
 
     def delete
@@ -252,19 +248,15 @@ module Dynamini
     end
 
     def touch_to_dynamo
-      self.class.client.update_item(table_name: self.class.table_name, key: key, attribute_updates: {updated_at: {value: attributes[:updated_at], action: 'PUT'}})
+      self.class.client.update_item(table_name: self.class.table_name, key: key, attribute_updates: {updated_at: {value: Time.now.to_f, action: 'PUT'}})
     end
 
     def delete_from_dynamo
       self.class.client.delete_item(table_name: self.class.table_name, key: key)
     end
 
-    def increment_to_dynamo(attribute, amount, opts={})
-      if opts[:skip_timestamps]
-        self.class.client.update_item(table_name: self.class.table_name, key: key, attribute_updates: {attribute => {value: amount, action: 'ADD'}})
-      else
-        self.class.client.update_item(table_name: self.class.table_name, key: key, attribute_updates: {attribute => {value: amount, action: 'ADD'}, updated_at: {value: attributes[:updated_at], action: 'PUT'}})
-      end
+    def increment_to_dynamo(attribute_increments, opts={})
+      self.class.client.update_item(table_name: self.class.table_name, key: key, attribute_updates: increment_updates(attribute_increments, opts))
     end
 
     def self.dynamo_batch_get(key_structure)
@@ -274,10 +266,10 @@ module Dynamini
     def self.dynamo_batch_save(model_array)
       put_requests = []
       model_array.each do |model|
-        put_requests << {put_request: {item: model.attributes.reject{|k, v| v.blank?}.stringify_keys}}
+        put_requests << { put_request: { item: model.attributes.reject{|_k, v| v.blank? }.stringify_keys } }
       end
-      request_options = {request_items: {
-          "#{table_name}" => put_requests}
+      request_options = { request_items: {
+          "#{table_name}" => put_requests }
       }
       client.batch_write_item(request_options)
     end
@@ -298,6 +290,27 @@ module Dynamini
       changes.reduce({}) do |updates, (key, value)|
         updates[key] = {value: value, action: 'PUT'} unless value.blank?
         updates
+      end
+    end
+
+    def increment_updates(attribute_increments, opts={})
+      updates = {}
+      attribute_increments.each do |k,v|
+        updates[k] = {value: v, action: 'ADD'}
+      end
+      updates[:updated_at] = {value: Time.now.to_f, action: 'PUT'} unless opts[:skip_timestamps]
+      updates[:created_at] = {value: Time.now.to_f, action: 'PUT'} unless attributes[:created_at]
+      updates
+    end
+
+    def validate_incrementable_attribute(attribute, value)
+      if value.is_a?(Integer) || value.is_a?(Float)
+        current_value = self.send(attribute)
+        unless current_value.nil? || current_value.is_a?(Integer) || current_value.is_a?(Float)
+          raise StandardError, "You cannot increment a non-numeric non-nil value: #{attribute} is currently #{current_value}. If your current value is a numeric string, use :handle to autocast it as a number."
+        end
+      else
+        raise StandardError, "You cannot increment an attribute by a non-numeric value: #{value}"
       end
     end
 

@@ -7,16 +7,22 @@ module Dynamini
     BATCH_SIZE = 25
     GETTER_PROCS = {
         integer:  proc { |v| v.to_i },
-        datetime: proc { |v| Time.at(v.to_f) },
+        date:     proc { |v| v.is_a?(Date) ? v : Time.at(v).to_date },
+        time:     proc { |v| Time.at(v.to_f) },
         float:    proc { |v| v.to_f },
         symbol:   proc { |v| v.to_sym },
         string:   proc { |v| v },
-        boolean:  proc { |v| [true, 'true', '1', '1.0'].include? v },
-        array:    proc { |v| v ? (v.is_a?(String) ? JSON.parse(v) : v) : [] }
+        boolean:  proc { |v| v }
     }
+
     SETTER_PROCS = {
-        datetime: proc { |v| v.to_f },
-        array: proc { |v| v if v.is_a? Array }
+        integer:  proc { |v| v.to_i },
+        time:     proc { |v| v.to_f },
+        float:    proc { |v| v.to_f },
+        symbol:   proc { |v| v.to_s },
+        string:   proc { |v| v },
+        boolean:  proc { |v| v },
+        date:     proc { |v| v.to_time.to_f }
     }
 
     class << self
@@ -366,7 +372,12 @@ module Dynamini
       fail 'Unsupported data type: ' + format_class.to_s if proc.nil?
       define_method(column) do
         if @attributes.key?(column)
-          proc.call(read_attribute(column))
+          v = read_attribute(column)
+          if v.is_a? Array
+            v.map{ |e| proc.call(e) }
+          else
+            proc.call(read_attribute(column))
+          end
         else
           options[:default] || nil
         end
@@ -376,13 +387,12 @@ module Dynamini
     def self.define_handled_setter(column, format_class)
       setter_symbol = (column.to_s + '=').to_sym
       proc = SETTER_PROCS[format_class]
-      if proc
-        define_method(setter_symbol) do |value|
+      fail 'Unsupported data type: ' + format_class.to_s if proc.nil?
+      define_method(setter_symbol) do |value|
+        if value.is_a? Array
+          write_attribute(column, value.map{ |e| proc.call(e) })
+        else
           write_attribute(column, proc.call(value))
-        end
-      else
-        define_method(setter_symbol) do |value|
-          write_attribute(column, value)
         end
       end
     end
@@ -407,7 +417,7 @@ module Dynamini
 
     #### Default class macros
 
-    handle :updated_at, :datetime
-    handle :created_at, :datetime
+    handle :updated_at, :time
+    handle :created_at, :time
   end
 end

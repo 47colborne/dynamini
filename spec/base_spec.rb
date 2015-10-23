@@ -583,8 +583,9 @@ describe Dynamini::Base do
   describe 'custom column handling' do
     class HandleModel < Dynamini::Base
       handle :price, :float, default: 10
-      handle :start_date, :datetime
-      handle :list, :array
+      handle :start_date, :time
+      handle :int_list, :integer
+      handle :sym_list, :symbol
     end
 
     let(:handle_model){ HandleModel.new }
@@ -604,20 +605,25 @@ describe Dynamini::Base do
       expect(handle_model.price).to eq 10
     end
 
-    it 'should store dates as floats' do
+    it 'should store times as floats' do
       handle_model.start_date = Time.now
       expect(handle_model.attributes[:start_date]).to be_a(Float)
       expect(handle_model.attributes[:start_date] > 1_000_000_000).to be_truthy
       expect(handle_model.start_date).to be_a(Time)
     end
 
-    it 'should handle arrays and reject non-arrays' do
-      handle_model.list = 'foo'
-      expect(handle_model.list).to eq []
-      handle_model.list = '[12, 24, 48]'
-      expect(handle_model.list).to eq []
-      handle_model.list = [12, 24, 48]
-      expect(handle_model.list).to eq([12, 24, 48])
+    it 'should reject bad data' do
+      expect{ handle_model.int_list = { a: 1 } }.to raise_error NoMethodError
+    end
+
+    it 'should save casted arrays' do
+      handle_model.int_list = [12, 24, 48]
+      expect(handle_model.int_list).to eq([12, 24, 48])
+    end
+
+    it 'should retrieve casted arrays' do
+      handle_model.sym_list = ['foo', 'bar', 'baz']
+      expect(handle_model.sym_list).to eq([:foo, :bar, :baz])
     end
   end
 

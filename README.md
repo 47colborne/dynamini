@@ -3,7 +3,7 @@ Dynamini is a lightweight DynamoDB interface designed as a drop-in replacement f
 
 [![Build Status](https://travis-ci.org/47colborne/dynamini.svg?branch=master)](https://travis-ci.org/47colborne/dynamini)
 [![Code Climate](https://codeclimate.com/github/47colborne/dynamini/badges/gpa.svg)](https://codeclimate.com/github/47colborne/dynamini)
-[![Gem Version](https://badge.fury.io/rb/dynamini.png)](http://badge.fury.io/rb/dynamini)
+[![Gem Version](https://badge.fury.io/rb/dynamini@2x.png)](https://badge.fury.io/rb/dynamini)
 [![Dependency Status](https://gemnasium.com/47colborne/dynamini.svg)](https://gemnasium.com/47colborne/dynamini)
 
 ## The Basics

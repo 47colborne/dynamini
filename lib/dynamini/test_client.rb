@@ -14,13 +14,13 @@ module Dynamini
     def update_item(args = {})
       table = args[:table_name]
       updates = flatten_attribute_updates(args).merge(
-          hash_key => args[:key][hash_key].to_s
+          hash_key => args[:key][hash_key]
       )
       @data[table] ||= {}
-      if @data[table][args[:key][hash_key].to_s].present?
-        @data[table][args[:key][hash_key].to_s].merge!(updates)
+      if @data[table][args[:key][hash_key]].present?
+        @data[table][args[:key][hash_key]].merge!(updates)
       else
-        @data[table][args[:key][hash_key].to_s] = updates
+        @data[table][args[:key][hash_key]] = updates
       end
     end
 
@@ -75,7 +75,7 @@ module Dynamini
           # if record has been saved
           attribute_hash[k] = (v[:value] + @data[args[:table_name]][args[:key][hash_key]][k].to_f)
         else
-          attribute_hash[k] = v[:value].to_s
+          attribute_hash[k] = v[:value]
         end
       end
       attribute_hash

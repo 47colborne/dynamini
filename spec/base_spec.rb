@@ -181,8 +181,8 @@ describe Dynamini::Base do
       context 'when incrementing a new record' do
         it 'should save the record and init the values and timestamps' do
           Dynamini::Base.new(id: 1, foo: 'bar').increment!(baz: 1)
-          found_model = Dynamini::Base.find('1')
-          expect(found_model.baz).to eq '1'
+          found_model = Dynamini::Base.find(1)
+          expect(found_model.baz).to eq 1
           expect(found_model.created_at).to_not be_nil
           expect(found_model.updated_at).to_not be_nil
         end

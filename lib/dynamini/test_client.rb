@@ -73,7 +73,7 @@ module Dynamini
       args[:attribute_updates].each do |k, v|
         if v[:action] == 'ADD' && @data[args[:table_name]][args[:key][hash_key]]
           # if record has been saved
-          attribute_hash[k] = (v[:value] + @data[args[:table_name]][args[:key][hash_key]][k].to_f).to_s
+          attribute_hash[k] = (v[:value] + @data[args[:table_name]][args[:key][hash_key]][k].to_f)
         else
           attribute_hash[k] = v[:value].to_s
         end

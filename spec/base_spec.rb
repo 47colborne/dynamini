@@ -138,7 +138,7 @@ describe Dynamini::Base do
       end
       context 'when incrementing a numeric value' do
         it 'should save' do
-          expect(model).to receive(:price).and_return(9.99)
+          expect(model).to receive(:read_attribute).and_return(9.99)
           expect(model.class.client).to receive(:update_item).with(
                                             table_name: 'bases',
                                             key: {id: model_attributes[:id]},
@@ -153,14 +153,14 @@ describe Dynamini::Base do
 
         end
         it 'should sum the values' do
-          expect(model).to receive(:price).and_return(9.99)
+          expect(model).to receive(:read_attribute).and_return(9.99)
           model.increment!(price: 5)
-          expect(Dynamini::Base.find('abcd1234').price).to eq '14.99'
+          expect(Dynamini::Base.find('abcd1234').price).to eq 14.99
         end
       end
       context 'when incrementing a non-numeric value' do
         it 'should raise an error and not save' do
-          expect(model).to receive(:price).and_return('hello')
+          expect(model).to receive(:read_attribute).and_return('hello')
           expect{ model.increment!(price: 5) }.to raise_error(StandardError)
         end
       end
@@ -171,11 +171,11 @@ describe Dynamini::Base do
       end
       context 'when incrementing multiple values' do
         it 'should create/sum both values' do
-          expect(model).to receive(:price).and_return(9.99)
-          model.increment!(price: 5, baz: 12.0)
+          allow(model).to receive(:read_attribute).and_return(9.99)
+          model.increment!(price: 5, baz: 6)
           found_model = Dynamini::Base.find('abcd1234')
-          expect(found_model.price).to eq '14.99'
-          expect(found_model.baz).to eq '12.0'
+          expect(found_model.price).to eq 14.99
+          expect(found_model.baz).to eq 6
         end
       end
       context 'when incrementing a new record' do

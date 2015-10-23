@@ -326,12 +326,10 @@ module Dynamini
 
     def validate_incrementable_attribute(attribute, value)
       if value.is_a?(Integer) || value.is_a?(Float)
-        current_value = self.send(attribute)
-        unless current_value.nil? || current_value.is_a?(Integer) || current_value.is_a?(Float)
+        current_value = read_attribute(attribute)
+        unless current_value.nil? || current_value.is_a?(Integer) || current_value.is_a?(Float) || current_value.is_a?(BigDecimal)
           fail StandardError, "Cannot increment a non-numeric non-nil value:
-                                #{attribute} is currently #{current_value}.
-                                If your current value is a numeric string,
-                                use :handle to autocast it as a number."
+                                #{attribute} is currently #{current_value}, a #{current_value.class}."
         end
       else
         fail StandardError, "You cannot increment an attribute by a

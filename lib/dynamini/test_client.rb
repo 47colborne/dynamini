@@ -15,8 +15,8 @@ module Dynamini
     def update_item(args = {})
       table = args[:table_name]
       arg_keys = args[:key]
-      arg_hash_key_str = arg_keys[hash_key].to_s
-      arg_range_key_str = arg_keys[range_key].to_s
+      arg_hash_key_str = arg_keys[hash_key]
+      arg_range_key_str = arg_keys[range_key]
 
       updates = flatten_attribute_updates(args).merge(
           hash_key => arg_hash_key_str
@@ -99,9 +99,9 @@ module Dynamini
 
           if v[:action] == 'ADD' && @data[args[:table_name]][args[:key][hash_key]]
             # if record has been saved
-            attribute_hash[k] = (v[:value] + @data[args[:table_name]][args[:key][hash_key]][k].to_f).to_s
+            attribute_hash[k] = (v[:value] + @data[args[:table_name]][args[:key][hash_key]][k].to_f)
           else
-            attribute_hash[k] = v[:value].to_s
+            attribute_hash[k] = v[:value]
           end
         end
       end

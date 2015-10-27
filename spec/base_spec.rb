@@ -138,7 +138,7 @@ describe Dynamini::Base do
       end
       context 'when incrementing a numeric value' do
         it 'should save' do
-          expect(model).to receive(:price).and_return(9.99)
+          expect(model).to receive(:read_attribute).and_return(9.99)
           expect(model.class.client).to receive(:update_item).with(
                                             table_name: 'bases',
                                             key: {id: model_attributes[:id]},
@@ -153,14 +153,14 @@ describe Dynamini::Base do
 
         end
         it 'should sum the values' do
-          expect(model).to receive(:price).and_return(9.99)
+          expect(model).to receive(:read_attribute).and_return(9.99)
           model.increment!(price: 5)
-          expect(Dynamini::Base.find('abcd1234').price).to eq '14.99'
+          expect(Dynamini::Base.find('abcd1234').price).to eq 14.99
         end
       end
       context 'when incrementing a non-numeric value' do
         it 'should raise an error and not save' do
-          expect(model).to receive(:price).and_return('hello')
+          expect(model).to receive(:read_attribute).and_return('hello')
           expect{ model.increment!(price: 5) }.to raise_error(StandardError)
         end
       end
@@ -171,18 +171,18 @@ describe Dynamini::Base do
       end
       context 'when incrementing multiple values' do
         it 'should create/sum both values' do
-          expect(model).to receive(:price).and_return(9.99)
-          model.increment!(price: 5, baz: 12.0)
+          allow(model).to receive(:read_attribute).and_return(9.99)
+          model.increment!(price: 5, baz: 6)
           found_model = Dynamini::Base.find('abcd1234')
-          expect(found_model.price).to eq '14.99'
-          expect(found_model.baz).to eq '12.0'
+          expect(found_model.price).to eq 14.99
+          expect(found_model.baz).to eq 6
         end
       end
       context 'when incrementing a new record' do
         it 'should save the record and init the values and timestamps' do
           Dynamini::Base.new(id: 1, foo: 'bar').increment!(baz: 1)
-          found_model = Dynamini::Base.find('1')
-          expect(found_model.baz).to eq '1'
+          found_model = Dynamini::Base.find(1)
+          expect(found_model.baz).to eq 1
           expect(found_model.created_at).to_not be_nil
           expect(found_model.updated_at).to_not be_nil
         end
@@ -583,8 +583,9 @@ describe Dynamini::Base do
   describe 'custom column handling' do
     class HandleModel < Dynamini::Base
       handle :price, :float, default: 10
-      handle :start_date, :datetime
-      handle :list, :array
+      handle :start_date, :time
+      handle :int_list, :integer
+      handle :sym_list, :symbol
     end
 
     let(:handle_model){ HandleModel.new }
@@ -604,20 +605,25 @@ describe Dynamini::Base do
       expect(handle_model.price).to eq 10
     end
 
-    it 'should store dates as floats' do
+    it 'should store times as floats' do
       handle_model.start_date = Time.now
       expect(handle_model.attributes[:start_date]).to be_a(Float)
       expect(handle_model.attributes[:start_date] > 1_000_000_000).to be_truthy
       expect(handle_model.start_date).to be_a(Time)
     end
 
-    it 'should handle arrays and reject non-arrays' do
-      handle_model.list = 'foo'
-      expect(handle_model.list).to eq []
-      handle_model.list = '[12, 24, 48]'
-      expect(handle_model.list).to eq []
-      handle_model.list = [12, 24, 48]
-      expect(handle_model.list).to eq([12, 24, 48])
+    it 'should reject bad data' do
+      expect{ handle_model.int_list = { a: 1 } }.to raise_error NoMethodError
+    end
+
+    it 'should save casted arrays' do
+      handle_model.int_list = [12, 24, 48]
+      expect(handle_model.int_list).to eq([12, 24, 48])
+    end
+
+    it 'should retrieve casted arrays' do
+      handle_model.sym_list = ['foo', 'bar', 'baz']
+      expect(handle_model.sym_list).to eq([:foo, :bar, :baz])
     end
   end
 

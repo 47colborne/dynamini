@@ -3,7 +3,7 @@ Dynamini is a lightweight DynamoDB interface designed as a drop-in replacement f
 
 [![Build Status](https://travis-ci.org/47colborne/dynamini.svg?branch=master)](https://travis-ci.org/47colborne/dynamini)
 [![Code Climate](https://codeclimate.com/github/47colborne/dynamini/badges/gpa.svg)](https://codeclimate.com/github/47colborne/dynamini)
-[![Gem Version](https://badge.fury.io/rb/dynamini.png)](http://badge.fury.io/rb/dynamini)
+[![Gem Version](https://badge.fury.io/rb/dynamini.svg)](https://badge.fury.io/rb/dynamini)
 [![Dependency Status](https://gemnasium.com/47colborne/dynamini.svg)](https://gemnasium.com/47colborne/dynamini)
 
 ## The Basics
@@ -63,7 +63,7 @@ end
 ```
 
 ## Datatype Handling
-The Dynamo Ruby SDK retrieves all fields as strings by default. This can be inconvenient for numeric fields or dates, since you'll have to convert them to the correct type after retrieval. Dynamini supports automatic type conversion, allowing you to save non-string attributes to your model and retrieve them as the correct datatype later. If you want to see the stringified version returned by the database, just check the attributes hash. You can also specify default values for your fields. Here's how you set it up:
+There are a few quirks about how the Dynamo Ruby SDK stores data. It stores numeric values as BigDecimal objects, symbols as strings, and doesn't accept ruby Date or Time objects. To save you from having to convert your data to the correct type before saving and after retrieval, you can use the :handle helper for automatic type conversion. You can also use this to specify default values for your fields. Here's how it works:
 
 ```ruby
 class Vehicle < Dynamini::Base
@@ -78,7 +78,7 @@ car.top_speed = 90
 car.save
 Vehicle.find('43H1R').top_speed
 > 90
-# This would be '90' without the handle helper.
+# This would return BigDecimal(90) without the handle helper.
 ```
 
 Defaults are optional - without a default, a handled field without a value assigned to it will return nil like any other field.
@@ -88,12 +88,46 @@ The following datatypes are supported by handle:
 * :float
 * :symbol
 * :boolean
-* :array
-* :datetime (for dates represented by ruby Time objects)
+* :date
+* :time
 * :string
 
-Note that the magic fields updated_at and created_at are handled as :datetime by default.
+Booleans and strings don't actually need to be translated, but you can set up defaults for those fields this way.
+The magic fields updated_at and created_at are handled as :time by default.
 
+## Array Support
+You can save arrays to your Dynamini model. If you've :handled that attribute, it will attempt to convert its contents to the correct datatype when setting and getting. Here's how it works:
+
+```ruby
+class Vehicle < Dynamini::Base
+    set_hash_key :vin
+    handle :parts, :symbol, default: []
+end
+
+car = Vehicle.new(vin: 'H3LL0')
+car.parts
+> []
+
+car.parts = 'wheel'
+car.parts
+> :wheel
+
+car.parts = ['wheel', 'brakes', 'seat']
+car.parts
+> [:wheel, :brakes, :seat]
+
+# This line will raise an error since 5 cannot be converted to a symbol.
+car.parts = ['wheel', 'brakes', 5]
+
+# That multitype array can be saved to a non-:handled attribute.
+car.stuff = ['wheel', 'brakes', 5]
+car.stuff
+> ['wheel', 'brakes', 5]
+# But then you won't have any type conversion.
+car.save
+Vehicle.find('H3LLO').stuff
+> ['wheel', 'brakes', BigDecimal(5)]
+```
 
 ## Testing
 There's a test client included with this gem, meaning you don't have to connect to a real Dynamo instance when testing.

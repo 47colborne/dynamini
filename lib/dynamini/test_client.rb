@@ -4,11 +4,12 @@ module Dynamini
   # In-memory database client for test purposes.
   class TestClient
 
-    attr_reader :hash_key, :data
+    attr_reader :hash_key, :data, :range_key
 
-    def initialize(hash_key)
+    def initialize(hash_key, range_key=nil)
       @data = {}
       @hash_key = hash_key
+      @range_key = range_key
     end
 
     def update_item(args = {})
@@ -16,12 +17,31 @@ module Dynamini
       updates = flatten_attribute_updates(args).merge(
           hash_key => args[:key][hash_key].to_s
       )
+
       @data[table] ||= {}
-      if @data[table][args[:key][hash_key].to_s].present?
+
+      #existing record for hash && range
+      if @data[table][args[:key][hash_key].to_s].present? && args[:key][hash_key].present? && @range_key.present? && args[:key][range_key].present?
+        updates.merge!(range_key => args[:key][range_key].to_s)
+
+        @data[table][args[:key][hash_key].to_s][args[:key][range_key].to_s].merge! updates
+
+      #new record for hash & range ONLY
+      elsif args[:key][hash_key].present? && args[:key][range_key].present?
+        updates.merge!(range_key => args[:key][range_key].to_s)
+
+        @data[table][args[:key][hash_key].to_s] ||= {}
+        @data[table][args[:key][hash_key].to_s][args[:key][range_key].to_s] = updates
+
+      #existing record for hash ONLY
+      elsif @data[table][args[:key][hash_key].to_s].present?
         @data[table][args[:key][hash_key].to_s].merge!(updates)
-      else
+
+      #new record for hash ONLY
+      elsif args[:key][hash_key].present?
         @data[table][args[:key][hash_key].to_s] = updates
       end
+
     end
 
     def get_item(args = {})
@@ -70,14 +90,18 @@ module Dynamini
     def flatten_attribute_updates(args = {})
       attribute_hash = {}
 
-      args[:attribute_updates].each do |k, v|
-        if v[:action] == 'ADD' && @data[args[:table_name]][args[:key][hash_key]]
-          # if record has been saved
-          attribute_hash[k] = (v[:value] + @data[args[:table_name]][args[:key][hash_key]][k].to_f).to_s
-        else
-          attribute_hash[k] = v[:value].to_s
+      if args[:attribute_updates]
+        args[:attribute_updates].each do |k, v|
+
+          if v[:action] == 'ADD' && @data[args[:table_name]][args[:key][hash_key]]
+            # if record has been saved
+            attribute_hash[k] = (v[:value] + @data[args[:table_name]][args[:key][hash_key]][k].to_f).to_s
+          else
+            attribute_hash[k] = v[:value].to_s
+          end
         end
       end
+
       attribute_hash
     end
   end

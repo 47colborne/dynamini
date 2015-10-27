@@ -50,8 +50,18 @@ module Dynamini
 
     def get_item(args = {})
       table = args[:table_name]
+      hash_key_value = args[:key][hash_key]
+      range_key_value = args[:key][range_key]
+
       @data[table] ||= {}
-      attributes_hash = @data[table][args[:key][hash_key]]
+
+      if hash_key_value && range_key_value
+        attributes_hash = @data[table][hash_key_value]
+        attributes_hash = attributes_hash[range_key_value] if attributes_hash
+      else
+        attributes_hash = @data[table][hash_key_value]
+      end
+
       item = attributes_hash.nil? ? nil : attributes_hash
       OpenStruct.new(item: item)
     end

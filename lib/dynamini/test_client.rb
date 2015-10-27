@@ -14,32 +14,36 @@ module Dynamini
 
     def update_item(args = {})
       table = args[:table_name]
+      arg_keys = args[:key]
+      arg_hash_key_str = arg_keys[hash_key].to_s
+      arg_range_key_str = arg_keys[range_key].to_s
+
       updates = flatten_attribute_updates(args).merge(
-          hash_key => args[:key][hash_key].to_s
+          hash_key => arg_hash_key_str
       )
 
       @data[table] ||= {}
 
       #existing record for hash && range
-      if @data[table][args[:key][hash_key].to_s].present? && args[:key][hash_key].present? && @range_key.present? && args[:key][range_key].present?
-        updates.merge!(range_key => args[:key][range_key].to_s)
+      if @data[table][arg_hash_key_str].present? && arg_keys[hash_key].present? && @range_key.present? && arg_keys[range_key].present?
+        updates.merge!(range_key => arg_range_key_str)
 
-        @data[table][args[:key][hash_key].to_s][args[:key][range_key].to_s].merge! updates
+        @data[table][arg_hash_key_str][arg_range_key_str].merge! updates
 
       #new record for hash & range ONLY
-      elsif args[:key][hash_key].present? && args[:key][range_key].present?
-        updates.merge!(range_key => args[:key][range_key].to_s)
+      elsif arg_keys[hash_key].present? && arg_keys[range_key].present?
+        updates.merge!(range_key => arg_range_key_str)
 
-        @data[table][args[:key][hash_key].to_s] ||= {}
-        @data[table][args[:key][hash_key].to_s][args[:key][range_key].to_s] = updates
+        @data[table][arg_hash_key_str] ||= {}
+        @data[table][arg_hash_key_str][arg_range_key_str] = updates
 
       #existing record for hash ONLY
-      elsif @data[table][args[:key][hash_key].to_s].present?
-        @data[table][args[:key][hash_key].to_s].merge!(updates)
+      elsif @data[table][arg_hash_key_str].present?
+        @data[table][arg_hash_key_str].merge!(updates)
 
       #new record for hash ONLY
-      elsif args[:key][hash_key].present?
-        @data[table][args[:key][hash_key].to_s] = updates
+      elsif arg_keys[hash_key].present?
+        @data[table][arg_hash_key_str] = updates
       end
 
     end

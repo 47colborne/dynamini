@@ -121,7 +121,7 @@ describe Dynamini::Base do
         it 'should save' do
           expect(model.class.client).to receive(:update_item).with(
                                             table_name: 'bases',
-                                            key: { id: model_attributes[:id] },
+                                            key: {id: model_attributes[:id]},
                                             attribute_updates: hash_including(
                                                 foo: {
                                                     value: 5,
@@ -161,12 +161,12 @@ describe Dynamini::Base do
       context 'when incrementing a non-numeric value' do
         it 'should raise an error and not save' do
           expect(model).to receive(:read_attribute).and_return('hello')
-          expect{ model.increment!(price: 5) }.to raise_error(StandardError)
+          expect { model.increment!(price: 5) }.to raise_error(StandardError)
         end
       end
       context 'when incrementing with a non-numeric value' do
         it 'should raise an error and not save' do
-          expect{ model.increment!(foo: 'bar') }.to raise_error(StandardError)
+          expect { model.increment!(foo: 'bar') }.to raise_error(StandardError)
         end
       end
       context 'when incrementing multiple values' do
@@ -206,7 +206,7 @@ describe Dynamini::Base do
       end
 
       context 'when enqueuing an invalid object' do
-        let(:bad_attributes) { { name: 'bad', id: nil } }
+        let(:bad_attributes) { {name: 'bad', id: nil} }
         before do
           allow_any_instance_of(Dynamini::Base).to receive(:valid?).and_return(false)
         end
@@ -386,7 +386,7 @@ describe Dynamini::Base do
           it 'should call update_item with the changed attributes' do
             expect(model.class.client).to receive(:update_item).with(
                                               table_name: 'bases',
-                                              key: { id: model_attributes[:id] },
+                                              key: {id: model_attributes[:id]},
                                               attribute_updates: hash_including(
                                                   price: {
                                                       value: '5',
@@ -409,7 +409,7 @@ describe Dynamini::Base do
           it 'should suppress any blank keys' do
             expect(model.class.client).to receive(:update_item).with(
                                               table_name: 'bases',
-                                              key: { id: model_attributes[:id] },
+                                              key: {id: model_attributes[:id]},
                                               attribute_updates: hash_not_including(
                                                   foo: {
                                                       value: '',
@@ -460,7 +460,7 @@ describe Dynamini::Base do
       context 'when the item exists in the DB' do
         it 'should delete the item and return the item' do
           expect(model.delete).to eq(model)
-          expect{ Dynamini::Base.find(model.id) }.to raise_error ('Item not found.')
+          expect { Dynamini::Base.find(model.id) }.to raise_error ('Item not found.')
         end
       end
       context 'when the item does not exist in the DB' do
@@ -476,7 +476,7 @@ describe Dynamini::Base do
       allow(Time).to receive(:now).and_return 1
       expect(model.class.client).to receive(:update_item).with(
                                         table_name: 'bases',
-                                        key: { id: model_attributes[:id] },
+                                        key: {id: model_attributes[:id]},
                                         attribute_updates: {
                                             updated_at: {
                                                 value: 1,
@@ -489,25 +489,28 @@ describe Dynamini::Base do
 
     it 'should raise an error when called on a new record' do
       new_model = Dynamini::Base.new(id: '3456')
-      expect{ new_model.touch }.to raise_error StandardError
+      expect { new_model.touch }.to raise_error StandardError
     end
   end
 
   describe '#save!' do
-    class TestValidation < Dynamini::Base
-      set_hash_key :bar
-      validates_presence_of :foo
-      self.in_memory = true
-    end
 
-    it 'should raise its failed validation errors' do
-      model = TestValidation.new(bar: 'baz')
-      expect { model.save! }.to raise_error StandardError
-    end
+    context 'hash key only' do
+      class TestValidation < Dynamini::Base
+        set_hash_key :bar
+        validates_presence_of :foo
+        self.in_memory = true
+      end
 
-    it 'should not validate if validate: false is passed' do
-      model = TestValidation.new(bar: 'baz')
-      expect(model.save!(validate: false)).to eq true
+      it 'should raise its failed validation errors' do
+        model = TestValidation.new(bar: 'baz')
+        expect { model.save! }.to raise_error StandardError
+      end
+
+      it 'should not validate if validate: false is passed' do
+        model = TestValidation.new(bar: 'baz')
+        expect(model.save!(validate: false)).to eq true
+      end
     end
   end
 
@@ -523,21 +526,42 @@ describe Dynamini::Base do
   end
 
   describe '#trigger_save' do
+    class TestHashRangeTable < Dynamini::Base
+      set_hash_key :bar
+      set_range_key :abc
+    end
+
+    TestHashRangeTable.in_memory = true
+
     let(:time) { Time.now }
     before do
       allow(Time).to receive(:now).and_return(time)
     end
     context 'new record' do
-      it 'should set created and updated time to current time' do
+      it 'should set created and updated time to current time for hash key only table' do
         new_model = Dynamini::Base.create(id: '6789')
         # stringify to handle floating point rounding issue
         expect(new_model.created_at.to_s).to eq(time.to_s)
         expect(new_model.updated_at.to_s).to eq(time.to_s)
+        expect(new_model.id).to eq('6789')
       end
+
+      # create fake dynamini child class for testing range key
+
+      it 'should set created and updated time to current time for hash and range key table' do
+        new_model = TestHashRangeTable.create!(bar: '6789', abc: '1234')
+
+        # stringify to handle floating point rounding issue
+        expect(new_model.created_at.to_s).to eq(time.to_s)
+        expect(new_model.updated_at.to_s).to eq(time.to_s)
+        expect(new_model.bar).to eq('6789')
+        expect(new_model.abc).to eq('1234')
+      end
+
     end
     context 'existing record' do
       it 'should set updated time but not created time' do
-        existing_model = Dynamini::Base.new({ name: 'foo' }, false)
+        existing_model = Dynamini::Base.new({name: 'foo'}, false)
         existing_model.price = 5
         existing_model.save
         expect(existing_model.updated_at.to_s).to eq(time.to_s)
@@ -588,7 +612,7 @@ describe Dynamini::Base do
       handle :sym_list, :symbol
     end
 
-    let(:handle_model){ HandleModel.new }
+    let(:handle_model) { HandleModel.new }
 
     it 'should create getters and setters' do
       expect(handle_model).to_not receive(:method_missing)
@@ -613,7 +637,7 @@ describe Dynamini::Base do
     end
 
     it 'should reject bad data' do
-      expect{ handle_model.int_list = { a: 1 } }.to raise_error NoMethodError
+      expect { handle_model.int_list = {a: 1} }.to raise_error NoMethodError
     end
 
     it 'should save casted arrays' do

@@ -64,7 +64,7 @@ module Dynamini
 
       def client
         if in_memory
-          @client ||= Dynamini::TestClient.new(hash_key)
+          @client ||= Dynamini::TestClient.new(hash_key, range_key)
         else
           @client ||= Aws::DynamoDB::Client.new(
               region: Dynamini.configuration.region,

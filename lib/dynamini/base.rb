@@ -98,13 +98,15 @@ module Dynamini
         r.item.present?
       end
 
-      def find_or_new(key)
-        fail 'Key cannot be blank.' if (key.nil? || key == '')
-        r = client.get_item(table_name: table_name, key: { hash_key => key.to_s })
+      def find_or_new(hash_value, range_value = nil)
+        fail 'Key cannot be blank.' if (hash_value.nil? || hash_value == '')
+        fail 'Range key cannot be blank.' if range_key && range_value.nil?
+
+        r = client.get_item(table_name: table_name, key: create_key_hash(hash_value, range_value))
         if r.item
           new(r.item.symbolize_keys, false)
         else
-          new(hash_key => key.to_s)
+          range_key ? new(hash_key => hash_value.to_s, range_key => range_value.to_s) : new(hash_key => hash_value.to_s)
         end
       end
 

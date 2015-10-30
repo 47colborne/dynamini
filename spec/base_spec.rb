@@ -296,12 +296,29 @@ describe Dynamini::Base do
     describe '.find_or_new' do
       context 'when a record with the given key exists' do
         it 'should return that record' do
-          expect(Dynamini::Base.find_or_new(model.id).new_record?).to be_falsey
+          existing_record = Dynamini::Base.find_or_new(model.id)
+          expect(existing_record.new_record?).to eq(false)
+          expect(existing_record.id).to eq(model.id)
         end
+
+        it 'should return the record for table with range key' do
+          existing_record = TestClassWithRange.create!(foo: 'abc', bar: 123)
+          expect(TestClassWithRange.find_or_new(existing_record.foo, existing_record.bar).new_record?).to eq(false)
+          expect(existing_record.foo).to eq('abc')
+          expect(existing_record.bar).to eq(123)
+        end
+
       end
       context 'when the key cannot be found' do
         it 'should initialize a new object with that key' do
           expect(Dynamini::Base.find_or_new('foo').new_record?).to be_truthy
+        end
+
+        it 'should initialize a new object with hash key and range key' do
+          new_record = TestClassWithRange.find_or_new('hash_key', 'range_key')
+          expect(new_record.new_record?).to be_truthy
+          expect(new_record.foo).to eq('hash_key')
+          expect(new_record.bar).to eq('range_key')
         end
       end
     end

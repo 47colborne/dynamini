@@ -12,9 +12,11 @@ This gem provides an opinionated interface, set up to let you use Amazon's Dynam
 Class methods:
 * create(attributes)
 * create!(attributes)
-* find(key)
-* exists?(key)
-* find_or_new(key)
+* find(hash_key, range_key)
+* exists?(hash_key, range_key)
+* find_or_new(hash_key, range_key)
+
+Note: range_key is optional, but you must always provide the hash_key
 
 Instance methods:
 * new(attributes)
@@ -162,7 +164,7 @@ config.after(:each) {
 * You might want to conditionally set the table name for your model based on the Rails.env, enabling separate tables for development and production.
 
 ## Coming Soon
-* Support for range keys
+* Requests?
 
 ## Contributing
 

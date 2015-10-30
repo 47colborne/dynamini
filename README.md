@@ -16,7 +16,7 @@ Class methods:
 * exists?(hash_key, range_key)
 * find_or_new(hash_key, range_key)
 
-Note: range_key is optional, but you must always provide the hash_key
+Note: The range_key arguments are only necessary if your DynamoDB table is configured with a range key.
 
 Instance methods:
 * new(attributes)
@@ -54,10 +54,11 @@ end
 ```
 
 Then set up your model. You'll need to have it inherit from Dynamini::Base, then identify the primary key and table name to match your DynamoDB setup.
-Here's what a sample model looks like. We'll refer back to this model later in the documentation.
+Here's what a sample model looks like.
 ```ruby
 class Vehicle < Dynamini::Base
     set_hash_key :vin           # defaults to :id if not set
+    set_range_key :manufacturer # must be set but only if your DynamoDB table is configured with a range key
     set_table_name 'desks-dev'  # defaults to the pluralized, downcased model name if not set
 
     # ...All the rest of your class methods, instance methods, and validators
@@ -164,7 +165,7 @@ config.after(:each) {
 * You might want to conditionally set the table name for your model based on the Rails.env, enabling separate tables for development and production.
 
 ## Coming Soon
-* Requests?
+* Conditional updates ( http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.SpecifyingConditions.html )
 
 ## Contributing
 

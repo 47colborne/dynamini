@@ -13,6 +13,11 @@ describe Dynamini::Base do
 
   subject(:model) { Dynamini::Base.new(model_attributes) }
 
+  class TestClassWithRange < Dynamini::Base
+    set_hash_key :foo
+    set_range_key :bar
+    self.in_memory = true
+  end
 
   before do
     Dynamini::Base.in_memory = true
@@ -659,16 +664,35 @@ describe Dynamini::Base do
     end
 
     describe '.exists?' do
-      context 'the item exists' do
-        it 'should return true' do
-          expect(Dynamini::Base.exists?(model_attributes[:id])).to be_truthy
+
+      context 'with hash key' do
+        context 'the item exists' do
+          it 'should return true' do
+            expect(Dynamini::Base.exists?(model_attributes[:id])).to be_truthy
+          end
+        end
+
+        context 'the item does not exist' do
+          it 'should return false' do
+            expect(Dynamini::Base.exists?('nonexistent id')).to eq(false)
+          end
         end
       end
 
-      context 'the item does not exist' do
-        it 'should return false' do
-          expect(Dynamini::Base.exists?('nonexistent id')).to be_falsey
+      context 'with hash key and range key' do
+
+        it 'should return true if item exists' do
+          TestClassWithRange.create!(foo: 'abc', bar: 123)
+
+          expect(TestClassWithRange.exists?('abc', 123)).to eq(true)
         end
+
+        it 'should return false if the item does not exist' do
+          TestClassWithRange.create!(foo: 'abc', bar: 123)
+
+          expect(TestClassWithRange.exists?('abc', 'nonexistent range key')).to eq(false)
+        end
+
       end
     end
 
@@ -781,20 +805,10 @@ describe Dynamini::Base do
         end
       end
       context 'when using both hash_key and range_key' do
-
-        before do
-          class TestClass < Dynamini::Base
-            set_hash_key :foo
-            set_range_key :bar
-            self.in_memory = true
-          end
-        end
-
         it 'should return an hash containing only the hash_key name and value' do
-          key_hash = TestClass.new(foo: 2, bar: 2015).send(:key)
+          key_hash = TestClassWithRange.new(foo: 2, bar: 2015).send(:key)
           expect(key_hash).to eq(foo: 2, bar: 2015)
         end
-
       end
     end
   end

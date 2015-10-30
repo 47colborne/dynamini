@@ -91,8 +91,10 @@ module Dynamini
         new(response.item.symbolize_keys, false)
       end
 
-      def exists?(key)
-        r = client.get_item(table_name: table_name, key: { hash_key => key.to_s })
+      def exists?(hash_value, range_value = nil)
+        fail 'Range key cannot be blank.' if range_key && range_value.nil?
+
+        r = client.get_item(table_name: table_name, key: create_key_hash(hash_value, range_value))
         r.item.present?
       end
 

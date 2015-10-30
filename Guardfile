@@ -53,6 +53,8 @@ guard :rspec, cmd: "bundle exec rspec" do
     ]
   end
 
+  watch(%r{^lib\/[a-zA-Z]+\/(.+)\.rb$}) { |m| "spec/#{m[1]}_spec.rb" }
+
   # Rails config changes
   watch(rails.spec_helper)     { rspec.spec_dir }
   watch(rails.routes)          { "#{rspec.spec_dir}/routing" }

@@ -106,7 +106,7 @@ module Dynamini
         if r.item
           new(r.item.symbolize_keys, false)
         else
-          range_key ? new(hash_key => hash_value.to_s, range_key => range_value.to_s) : new(hash_key => hash_value.to_s)
+          range_key ? new(hash_key => hash_value, range_key => range_value) : new(hash_key => hash_value)
         end
       end
 

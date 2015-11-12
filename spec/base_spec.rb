@@ -302,9 +302,9 @@ describe Dynamini::Base do
         end
 
         it 'should return the record for table with range key' do
-          existing_record = TestClassWithRange.create!(foo: 'abc', bar: 123)
+          existing_record = TestClassWithRange.create!(foo: 1, bar: 123)
           expect(TestClassWithRange.find_or_new(existing_record.foo, existing_record.bar).new_record?).to eq(false)
-          expect(existing_record.foo).to eq('abc')
+          expect(existing_record.foo).to eq(1)
           expect(existing_record.bar).to eq(123)
         end
 
@@ -315,9 +315,9 @@ describe Dynamini::Base do
         end
 
         it 'should initialize a new object with hash key and range key' do
-          new_record = TestClassWithRange.find_or_new('hash_key', 'range_key')
+          new_record = TestClassWithRange.find_or_new(1, 'range_key')
           expect(new_record.new_record?).to be_truthy
-          expect(new_record.foo).to eq('hash_key')
+          expect(new_record.foo).to eq(1)
           expect(new_record.bar).to eq('range_key')
         end
       end

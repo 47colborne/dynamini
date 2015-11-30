@@ -144,13 +144,21 @@ module Dynamini
     #### Instance Methods
 
     def initialize(attributes = {}, new_record = true)
-      @changed = Set.new
       @new_record = new_record
       @attributes = {}
-
+      clear_changes
       attributes.each do |k, v|
         write_attribute(k, v, new_record)
       end
+    end
+
+    def changes
+      @changes.delete_if { |attr, value| [self.class.hash_key, self.class.range_key].include?(attr) }
+              .stringify_keys
+    end
+
+    def changed
+      changes.keys.map(&:to_s)
     end
 
     def ==(other)
@@ -175,13 +183,13 @@ module Dynamini
     end
 
     def save(options = {})
-      @changed.empty? || (valid? && trigger_save(options))
+      @changes.empty? || (valid? && trigger_save(options))
     end
 
     def save!(options = {})
       options[:validate] = true if options[:validate].nil?
 
-      unless @changed.empty?
+      unless @changes.empty?
         if (options[:validate] && valid?) || !options[:validate]
           trigger_save(options)
         else
@@ -199,11 +207,11 @@ module Dynamini
       end
     end
 
-    def increment!(attribute_increments, opts = {})
-      attribute_increments.each do |a, v|
-        validate_incrementable_attribute(a, v)
+    def increment!(attributes, opts = {})
+      attributes.each do |attr, value|
+        validate_incrementable_attribute(attr, value)
       end
-      increment_to_dynamo(attribute_increments, opts)
+      increment_to_dynamo(attributes, opts)
     end
 
     def delete
@@ -211,26 +219,12 @@ module Dynamini
       self
     end
 
-    def changes
-      @attributes.select { |attribute| @changed.include?(attribute.to_s) &&
-          attribute != self.class.hash_key &&
-          attribute != self.class.range_key
-      }
-    end
-
-    def changed
-      @changed.to_a
-    end
 
     def new_record?
       @new_record
     end
 
     private
-
-    def add_changed(attributes)
-      @changed += attributes.keys.map(&:to_s)
-    end
 
     def trigger_save(options = {})
       generate_timestamps! unless options[:skip_timestamps]
@@ -276,11 +270,11 @@ module Dynamini
       self.class.client.delete_item(table_name: self.class.table_name, key: key)
     end
 
-    def increment_to_dynamo(attribute_increments, opts = {})
+    def increment_to_dynamo(attributes, opts = {})
       self.class.client.update_item(
           table_name: self.class.table_name,
           key: key,
-          attribute_updates: increment_updates(attribute_increments, opts)
+          attribute_updates: increment_updates(attributes, opts)
       )
     end
 
@@ -319,19 +313,20 @@ module Dynamini
 
     def attribute_updates
       changes.reduce({}) do |updates, (key, value)|
-        updates[key] = {value: value, action: 'PUT'} unless value.blank?
+        current_value = value[1]
+        updates[key] = {value: current_value, action: 'PUT'} unless current_value.blank?
         updates
       end
     end
 
-    def increment_updates(attribute_increments, opts = {})
+    def increment_updates(attributes, opts = {})
       updates = {}
-      attribute_increments.each do |k,v|
-        updates[k] = { value: v, action: 'ADD' }
+      attributes.each do |attr,value|
+        updates[attr] = { value: value, action: 'ADD' }
       end
       updates[:updated_at] = { value: Time.now.to_f, action: 'PUT' } unless opts[:skip_timestamps]
       updates[:created_at] = { value: Time.now.to_f, action: 'PUT' } unless attributes[:created_at]
-      updates
+      updates.stringify_keys
     end
 
     def validate_incrementable_attribute(attribute, value)
@@ -348,7 +343,7 @@ module Dynamini
     end
 
     def clear_changes
-      @changed = Set.new
+      @changes = Hash.new { |hash, key| hash[key] = Array.new(2) }
     end
 
     def method_missing(name, *args, &block)
@@ -407,12 +402,12 @@ module Dynamini
 
     def write_attribute(attribute, new_value, record_change = true)
       old_value = @attributes[attribute]
-      @attributes[attribute] = (new_value.nil? ? nil : new_value)
+      @attributes[attribute] = new_value
       record_change(attribute, new_value, old_value) if record_change
     end
 
     def record_change(attribute, new_value, old_value)
-      @changed << attribute.to_s if new_value != old_value
+      @changes[attribute] = [old_value, new_value]
     end
 
     def read_attribute(name)

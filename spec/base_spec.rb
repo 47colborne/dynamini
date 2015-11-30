@@ -5,7 +5,7 @@ describe Dynamini::Base do
   let(:model_attributes) {
     {
         name: 'Widget',
-        price: '9.99',
+        price: 9.99,
         id: 'abcd1234',
         hash_key: '009'
     }
@@ -63,7 +63,7 @@ describe Dynamini::Base do
       let(:dirty_model) { Dynamini::Base.new(model_attributes) }
 
       it 'should append all initial attrs to @changed, including hash_key' do
-        expect(dirty_model.changed).to eq(model_attributes.keys.map(&:to_s))
+        expect(dirty_model.changed).to eq(model_attributes.keys.map(&:to_s).delete_if { |k, v| k == 'id' })
       end
 
       it 'should not include the primary key in the changes' do
@@ -97,7 +97,7 @@ describe Dynamini::Base do
 
       it 'should return a model with the retrieved attributes' do
         found = Dynamini::Base.find('abcd1234')
-        expect(found.price).to eq('9.99')
+        expect(found.price).to eq(9.99)
         expect(found.name).to eq('Widget')
         expect(found.hash_key).to eq('009')
       end
@@ -128,7 +128,7 @@ describe Dynamini::Base do
                                             table_name: 'bases',
                                             key: {id: model_attributes[:id]},
                                             attribute_updates: hash_including(
-                                                foo: {
+                                                "foo" => {
                                                     value: 5,
                                                     action: 'ADD'
                                                 }
@@ -148,7 +148,7 @@ describe Dynamini::Base do
                                             table_name: 'bases',
                                             key: {id: model_attributes[:id]},
                                             attribute_updates: hash_including(
-                                                price: {
+                                                "price" => {
                                                     value: 5,
                                                     action: 'ADD'
                                                 }
@@ -376,7 +376,7 @@ describe Dynamini::Base do
 
       it 'should append changed attributes to @changed' do
         model.assign_attributes(name: 'Widget', price: '5')
-        expect(model.changed).to eq ['price']
+        expect(model.changed).to eq ['name', 'price']
       end
     end
 
@@ -410,7 +410,7 @@ describe Dynamini::Base do
                                               table_name: 'bases',
                                               key: {id: model_attributes[:id]},
                                               attribute_updates: hash_including(
-                                                  price: {
+                                                  "price" => {
                                                       value: '5',
                                                       action: 'PUT'
                                                   }
@@ -732,7 +732,7 @@ describe Dynamini::Base do
 
       context 'existing attribute' do
         it 'should return the attribute' do
-          expect(model.price).to eq('9.99')
+          expect(model.price).to eq(9.99)
         end
       end
 
@@ -774,25 +774,30 @@ describe Dynamini::Base do
       end
     end
 
-    describe '#changed' do
+    describe '#changes' do
+      it 'should not return the hash key or range key' do
+        Dynamini::Base.set_range_key(:range_key)
+        model.instance_variable_set(:@changes, {id: 'test_hash_key', range_key: "test_range_key"})
+        expect(model.changes).to eq({})
+      end
+
       context 'no change detected' do
-        before { model.price = '9.99' }
-        it 'should return an empty array' do
-          expect(model.changed).to be_empty
+        it 'should return an empty hash' do
+          expect(model.changes).to eq({})
         end
       end
 
       context 'attribute changed' do
         before { model.price = 1 }
         it 'should include the changed attribute' do
-          expect(model.changed).to include('price')
+          expect(model.changes['price']).to eq([9.99,1])
         end
       end
 
       context 'attribute created' do
         before { model.foo = 'bar' }
         it 'should include the created attribute' do
-          expect(model.changed).to include('foo')
+          expect(model.changes['foo']).to eq([nil, 'bar'])
         end
       end
 
@@ -802,8 +807,15 @@ describe Dynamini::Base do
           model.foo = 'baz'
         end
         it 'should only include one copy of the changed attribute' do
-          expect(model.changed).to eq(['foo'])
+          expect(model.changes['foo']).to eq(['bar', 'baz'])
         end
+      end
+    end
+
+    describe '#changed' do
+      it 'should stringify the keys of changes' do
+        allow(model).to receive(:changes).and_return({ 'price' => [1,2], 'name' => ['a','b'] })
+        expect(model.changed).to eq(['price', 'name'])
       end
     end
 

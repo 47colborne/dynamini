@@ -104,12 +104,17 @@ module Dynamini
     def flatten_attribute_updates(args = {})
       attribute_hash = {}
 
+      hash_key_value = args[:key][hash_key]
+      range_key_value = args[:key][range_key]
+
       if args[:attribute_updates]
         args[:attribute_updates].each do |k, v|
 
-          if v[:action] == 'ADD' && @data[args[:table_name]][args[:key][hash_key]]
+          if v[:action] == 'ADD' && @data[args[:table_name]][hash_key_value]
             # if record has been saved
-            attribute_hash[k] = (v[:value] + @data[args[:table_name]][args[:key][hash_key]][k].to_f)
+            data = @data[args[:table_name]][hash_key_value]
+            data = data[range_key_value] if range_key_value
+            attribute_hash[k] = (v[:value] + data[k].to_f)
           else
             attribute_hash[k] = v[:value]
           end

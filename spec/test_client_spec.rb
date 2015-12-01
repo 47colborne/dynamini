@@ -62,19 +62,19 @@ describe Dynamini::TestClient do
       let(:test_client) {Dynamini::TestClient.new(:hash_key_name)}
 
       it 'should return the item identified by the hash_key' do
-        test_client.update_item(table_name: table_name, key: {test_client.hash_key => "abc"}, attribute_updates: { test_attr: { value: 'test', action: 'PUT'}})
+        test_client.update_item(table_name: table_name, key: {test_client.hash_key_attr => "abc"}, attribute_updates: { test_attr: { value: 'test', action: 'PUT'}})
 
-        expect(test_client.get_item(table_name: table_name, key: {test_client.hash_key => "abc"}).item[:test_attr]).to eq('test')
+        expect(test_client.get_item(table_name: table_name, key: {test_client.hash_key_attr => "abc"}).item[:test_attr]).to eq('test')
       end
 
       it 'should returns nil if the item does not exist' do
-        expect(test_client.get_item(table_name: table_name, key: {test_client.hash_key => "abc"}).item).to eq(nil)
+        expect(test_client.get_item(table_name: table_name, key: {test_client.hash_key_attr => "abc"}).item).to eq(nil)
       end
 
       it 'should ignore any extra keys in the args' do
-        test_client.update_item(table_name: table_name, key: {test_client.hash_key => "abc"}, attribute_updates: { test_attr: { value: 'test', action: 'PUT'}})
+        test_client.update_item(table_name: table_name, key: {test_client.hash_key_attr => "abc"}, attribute_updates: { test_attr: { value: 'test', action: 'PUT'}})
 
-        expect(test_client.get_item(table_name: table_name, key: {test_client.hash_key => "abc", :extra_key => "extra"}).item[:test_attr]).to eq('test')
+        expect(test_client.get_item(table_name: table_name, key: {test_client.hash_key_attr => "abc", :extra_key => "extra"}).item[:test_attr]).to eq('test')
       end
     end
 
@@ -82,17 +82,17 @@ describe Dynamini::TestClient do
       let(:test_client) {Dynamini::TestClient.new(:hash_key_name, :range_key_name)}
 
       it 'should return the item identified by the hash_key' do
-        test_client.update_item(table_name: table_name, key: {test_client.hash_key => "abc", test_client.range_key => 'def'}, attribute_updates: { test_attr: { value: 'test_range', action: 'PUT'}})
+        test_client.update_item(table_name: table_name, key: {test_client.hash_key_attr => "abc", test_client.range_key_attr => 'def'}, attribute_updates: { test_attr: { value: 'test_range', action: 'PUT'}})
 
-        expect(test_client.get_item(table_name: table_name, key: {test_client.hash_key => "abc", test_client.range_key => 'def'}).item[:test_attr]).to eq('test_range')
+        expect(test_client.get_item(table_name: table_name, key: {test_client.hash_key_attr => "abc", test_client.range_key_attr => 'def'}).item[:test_attr]).to eq('test_range')
       end
 
       it 'should returns nil if the item does not exist' do
-        expect(test_client.get_item(table_name: table_name, key: {test_client.hash_key => "abc", test_client.range_key => 'def'}).item).to eq(nil)
+        expect(test_client.get_item(table_name: table_name, key: {test_client.hash_key_attr => "abc", test_client.range_key_attr => 'def'}).item).to eq(nil)
       end
 
       it 'should return nil when only supplied range key' do
-        expect(test_client.get_item(table_name: table_name, key: {test_client.range_key => 'def'}).item).to eq(nil)
+        expect(test_client.get_item(table_name: table_name, key: {test_client.range_key_attr => 'def'}).item).to eq(nil)
       end
     end
   end

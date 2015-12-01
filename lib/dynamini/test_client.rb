@@ -4,66 +4,61 @@ module Dynamini
   # In-memory database client for test purposes.
   class TestClient
 
-    attr_reader :hash_key, :data, :range_key
+    attr_reader :hash_key_attr, :data, :range_key_attr
 
-    def initialize(hash_key, range_key=nil)
+    def initialize(hash_key_attr, range_key_attr = nil)
       @data = {}
-      @hash_key = hash_key
-      @range_key = range_key
+      @hash_key_attr = hash_key_attr
+      @range_key_attr = range_key_attr
+    end
+
+    def get_table(table_name)
+      @data[table_name] ||= {}
     end
 
     def update_item(args = {})
-      table = args[:table_name]
-      arg_keys = args[:key]
-      arg_hash_key_str = arg_keys[hash_key]
-      arg_range_key_str = arg_keys[range_key]
+      table = get_table(args[:table_name])
+
+      keys = args[:key]
+
+      hash_key_value = keys[hash_key_attr]
+      range_key_value = keys[range_key_attr]
 
       updates = flatten_attribute_updates(args).merge(
-          hash_key => arg_hash_key_str
+          hash_key_attr => hash_key_value
       )
 
-      @data[table] ||= {}
+      if hash_key_value
+        if range_key_value
+          updates.merge!(range_key_attr => range_key_value)
+          if table[hash_key_value] && table[hash_key_value][range_key_value]
+            table[hash_key_value][range_key_value].merge! updates
+          else
+            table[hash_key_value] ||= {}
+            table[hash_key_value][range_key_value] = updates
+          end
 
-      #existing record for hash && range
-      if @data[table][arg_hash_key_str].present? && arg_keys[hash_key].present? && @range_key.present? && arg_keys[range_key].present?
-        updates.merge!(range_key => arg_range_key_str)
-
-        @data[table][arg_hash_key_str][arg_range_key_str].merge! updates
-
-      #new record for hash & range ONLY
-      elsif arg_keys[hash_key].present? && arg_keys[range_key].present?
-        updates.merge!(range_key => arg_range_key_str)
-
-        @data[table][arg_hash_key_str] ||= {}
-        @data[table][arg_hash_key_str][arg_range_key_str] = updates
-
-      #existing record for hash ONLY
-      elsif @data[table][arg_hash_key_str].present?
-        @data[table][arg_hash_key_str].merge!(updates)
-
-      #new record for hash ONLY
-      elsif arg_keys[hash_key].present?
-        @data[table][arg_hash_key_str] = updates
+        else
+          if table[hash_key_value]
+            table[hash_key_value].merge!(updates)
+          else
+            table[hash_key_value] = updates
+          end
+        end
       end
 
     end
 
     def get_item(args = {})
-      table = args[:table_name]
-      hash_key_value = args[:key][hash_key]
-      range_key_value = args[:key][range_key]
+      table = get_table(args[:table_name])
 
-      @data[table] ||= {}
+      hash_key_value = args[:key][hash_key_attr]
+      range_key_value = args[:key][range_key_attr]
 
-      if hash_key_value && range_key_value
-        attributes_hash = @data[table][hash_key_value]
-        attributes_hash = attributes_hash[range_key_value] if attributes_hash
-      else
-        attributes_hash = @data[table][hash_key_value]
-      end
+      attributes_hash = table[hash_key_value]
+      attributes_hash = attributes_hash[range_key_value] if attributes_hash && range_key_value
 
-      item = attributes_hash.nil? ? nil : attributes_hash
-      OpenStruct.new(item: item)
+      OpenStruct.new(item: attributes_hash)
     end
 
     def batch_get_item(args = {})
@@ -85,14 +80,14 @@ module Dynamini
         @data[k] ||= {}
         v.each do |request_hash|
           item = request_hash[:put_request][:item]
-          key = item[hash_key]
+          key = item[hash_key_attr]
           @data[k][key] = item
         end
       end
     end
 
     def delete_item(args = {})
-      @data[args[:table_name]].delete(args[:key][hash_key])
+      @data[args[:table_name]].delete(args[:key][hash_key_attr])
     end
 
     def reset
@@ -104,8 +99,8 @@ module Dynamini
     def flatten_attribute_updates(args = {})
       attribute_hash = {}
 
-      hash_key_value = args[:key][hash_key]
-      range_key_value = args[:key][range_key]
+      hash_key_value = args[:key][hash_key_attr]
+      range_key_value = args[:key][range_key_attr]
 
       if args[:attribute_updates]
         args[:attribute_updates].each do |k, v|

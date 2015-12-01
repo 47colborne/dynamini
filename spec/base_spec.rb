@@ -59,6 +59,36 @@ describe Dynamini::Base do
 
   describe 'operations' do
 
+    describe '.handle' do
+
+      class HandledClass < Dynamini::Base; end
+
+      context 'when reading the handled attirubte' do
+        before { HandledClass.handle :price, :integer, default: 9 }
+        it 'should return the proper format' do
+          object = HandledClass.new(price: "1")
+          expect(object.price).to eq(1)
+        end
+        it 'should return the default value if not assigned' do
+          object = HandledClass.new
+          expect(object.price).to eq(9)
+        end
+        it 'should return an array with formated item if handled' do
+          object = HandledClass.new(price: ["1", "2"])
+          expect(object.price).to eq([1,2])
+        end
+      end
+
+      context 'when writing the handled attribute' do
+        before { HandledClass.handle :price, :float, default: 9 }
+        it 'should convert the value to handled format' do
+          object = HandledClass.new(price: "1")
+          expect(object.attributes[:price]).to eq(1.0)
+        end
+      end
+
+    end
+
     describe '.new' do
       let(:dirty_model) { Dynamini::Base.new(model_attributes) }
 
@@ -588,6 +618,14 @@ describe Dynamini::Base do
         existing_model.save
         expect(existing_model.updated_at.to_s).to eq(time.to_s)
         expect(existing_model.created_at.to_s).to_not eq(time.to_s)
+      end
+      it 'should not update created_at again' do
+        object = Dynamini::Base.new(name: 'foo')
+        object.save
+        created_at = object.created_at
+        object.name = "bar"
+        object.save
+        expect(object.created_at).to eq created_at
       end
       it 'should preserve previously saved attributes' do
         model.foo = '1'

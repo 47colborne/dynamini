@@ -2,9 +2,18 @@ module Dynamini
   # Core db interface class.
   class Base
     include ActiveModel::Validations
+
     attr_reader :attributes
 
+    class_attribute :handles
+
+    self.handles = {
+          created_at: { format: :time, options: {} },
+          updated_at: { format: :time, options: {} }
+        }
+
     BATCH_SIZE = 25
+
     GETTER_PROCS = {
         integer:  proc { |v| v.to_i },
         date:     proc { |v| v.is_a?(Date) ? v : Time.at(v).to_date },
@@ -17,7 +26,7 @@ module Dynamini
 
     SETTER_PROCS = {
         integer:  proc { |v| v.to_i },
-        time:     proc { |v| v.to_f },
+        time:     proc { |v| (v.is_a?(Date) ? v.to_time : v).to_f },
         float:    proc { |v| v.to_f },
         symbol:   proc { |v| v.to_s },
         string:   proc { |v| v },
@@ -46,6 +55,8 @@ module Dynamini
       end
 
       def handle(column, format_class, options = {})
+        self.handles = self.handles.merge(column => { format: format_class, options: options })
+
         define_handled_getter(column, format_class, options)
         define_handled_setter(column, format_class)
       end
@@ -152,8 +163,12 @@ module Dynamini
       end
     end
 
+    def keys
+      [self.class.hash_key, self.class.range_key]
+    end
+
     def changes
-      @changes.delete_if { |attr, value| [self.class.hash_key, self.class.range_key].include?(attr) }
+      @changes.delete_if { |attr, value| keys.include?(attr) }
               .stringify_keys
     end
 
@@ -325,7 +340,7 @@ module Dynamini
         updates[attr] = { value: value, action: 'ADD' }
       end
       updates[:updated_at] = { value: Time.now.to_f, action: 'PUT' } unless opts[:skip_timestamps]
-      updates[:created_at] = { value: Time.now.to_f, action: 'PUT' } unless attributes[:created_at]
+      updates[:created_at] = { value: Time.now.to_f, action: 'PUT' } unless @attributes[:created_at]
       updates.stringify_keys
     end
 
@@ -369,30 +384,18 @@ module Dynamini
     def self.define_handled_getter(column, format_class, options = {})
       proc = GETTER_PROCS[format_class]
       fail 'Unsupported data type: ' + format_class.to_s if proc.nil?
+
       define_method(column) do
-        if @attributes.key?(column)
-          v = read_attribute(column)
-          if v.is_a? Array
-            v.map{ |e| proc.call(e) }
-          else
-            proc.call(read_attribute(column))
-          end
-        else
-          options[:default] || nil
-        end
+        read_attribute(column)
       end
     end
 
     def self.define_handled_setter(column, format_class)
-      setter_symbol = (column.to_s + '=').to_sym
+      method_name = (column.to_s + '=')
       proc = SETTER_PROCS[format_class]
       fail 'Unsupported data type: ' + format_class.to_s if proc.nil?
-      define_method(setter_symbol) do |value|
-        if value.is_a? Array
-          write_attribute(column, value.map{ |e| proc.call(e) })
-        else
-          write_attribute(column, proc.call(value))
-        end
+      define_method(method_name) do |value|
+        write_attribute(column, value)
       end
     end
 
@@ -401,7 +404,10 @@ module Dynamini
     end
 
     def write_attribute(attribute, new_value, record_change = true)
-      old_value = @attributes[attribute]
+      old_value = read_attribute(attribute)
+      if (handle = handles[attribute.to_sym]) && !new_value.nil?
+        new_value = attribute_callback(SETTER_PROCS, handle, new_value)
+      end
       @attributes[attribute] = new_value
       record_change(attribute, new_value, old_value) if record_change
     end
@@ -411,12 +417,22 @@ module Dynamini
     end
 
     def read_attribute(name)
-      @attributes[name]
+      value = @attributes[name]
+      if (handle = handles[name.to_sym])
+        value = handle[:options][:default] if value.nil?
+        value = attribute_callback(GETTER_PROCS, handle, value) unless value.nil?
+      end
+      value
     end
 
-    #### Default class macros
+    def attribute_callback(procs, handle, value)
+      callback = procs[handle[:format]]
+      value.is_a?(Array) ? value.map { |e| callback.call(e) } : callback.call(value)
+    end
 
-    handle :updated_at, :time
-    handle :created_at, :time
+    def handles
+      self.class.handles
+    end
+
   end
 end

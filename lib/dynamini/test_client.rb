@@ -108,7 +108,8 @@ module Dynamini
           if v[:action] == 'ADD' && @data[args[:table_name]][hash_key_value]
             # if record has been saved
             data = @data[args[:table_name]][hash_key_value]
-            data = data[range_key_value] if range_key_value
+            data = (data[range_key_value] ||= {}) if range_key_value
+
             attribute_hash[k] = (v[:value] + data[k].to_f)
           else
             attribute_hash[k] = v[:value]

@@ -118,22 +118,22 @@ C = DailyWeather.create!(city: "Toronto",  record_date: Date.new(2015,10,10), te
 D = DailyWeather.create!(city: "Seville",  record_date: Date.new(2015,10,10), temperature: 30)
 
 DailyWeather.query(hash_key: "Toronto")
-> returns [A, B, C]
+> [A, B, C]
 
 DailyWeather.query(hash_key: "Seville")
-> returns [D]
+> [D]
 
 DailyWeather.query(hash_key: "Bangkok")
-> returns []
+> []
 
 DailyWeather.query(hash_key: "Toronto", start: Date.new(2015,10,09))
-> returns [B, C]
+> [B, C]
 
 DailyWeather.query(hash_key: "Toronto", end: Date.new(2015,10,08))
-> returns [A]
+> [A]
 
 DailyWeather.query(hash_key: "Toronto", start: Date.new(2015,10,08), end: Date.new(2015,10,09))
-> returns [A, B]
+> [A, B]
 ```
 
 ## Array Support

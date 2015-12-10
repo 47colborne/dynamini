@@ -97,6 +97,45 @@ The following datatypes are supported by handle:
 Booleans and strings don't actually need to be translated, but you can set up defaults for those fields this way.
 The magic fields updated_at and created_at are handled as :time by default.
 
+## Querying With Range Keys
+
+Dynamini includes a query function that's much more narrow than ActiveRecord's where function. It's designed to retrieve a selection of records that belong to a given hash key but have various range key values. To use .query, your table needs to be configured with a range key, and you need to :handle that range field as a fundamentally numeric type - integer, float, date, or time.
+
+Query takes three arguments; a mandatory :hash_key, an optional :start, and an optional :end. Here's how you'd use it to find daily temperature data for a given city, selecting for specific date ranges:
+
+```ruby
+class DailyWeather < Dynamini::Base
+    set_hash_key :city
+    set_range_key :record_date
+    handle :temperature, :integer
+    handle :record_date, :date
+end
+
+# Seeding our dataset...
+A = DailyWeather.create!(city: "Toronto",  record_date: Date.new(2015,10,08), temperature: 15)
+B = DailyWeather.create!(city: "Toronto",  record_date: Date.new(2015,10,09), temperature: 17)
+C = DailyWeather.create!(city: "Toronto",  record_date: Date.new(2015,10,10), temperature: 12)
+D = DailyWeather.create!(city: "Seville",  record_date: Date.new(2015,10,10), temperature: 30)
+
+DailyWeather.query(hash_key: "Toronto")
+> returns [A, B, C]
+
+DailyWeather.query(hash_key: "Seville")
+> returns [D]
+
+DailyWeather.query(hash_key: "Bangkok")
+> returns []
+
+DailyWeather.query(hash_key: "Toronto", start: Date.new(2015,10,09))
+> returns [B, C]
+
+DailyWeather.query(hash_key: "Toronto", end: Date.new(2015,10,08))
+> returns [A]
+
+DailyWeather.query(hash_key: "Toronto", start: Date.new(2015,10,08), end: Date.new(2015,10,09))
+> returns [A, B]
+```
+
 ## Array Support
 You can save arrays to your Dynamini model. If you've :handled that attribute, it will attempt to convert its contents to the correct datatype when setting and getting. Here's how it works:
 

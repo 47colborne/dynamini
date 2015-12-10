@@ -17,6 +17,7 @@ describe Dynamini::Base do
     set_hash_key :foo
     set_range_key :bar
     self.in_memory = true
+    handle :bar, :integer
   end
 
   before do
@@ -147,6 +148,63 @@ describe Dynamini::Base do
         it 'should return the object as an instance of the subclass' do
           Foo.create(id: '1')
           expect(Foo.find('1')).to be_a Foo
+        end
+      end
+    end
+
+    describe '.query' do
+      before do
+        4.times do |i|
+          TestClassWithRange.create(foo: 'foo', bar: i + 1)
+        end
+      end
+      context 'start value provided' do
+        it 'should return records with a range key greater than or equal to the start value' do
+          records = TestClassWithRange.query(hash_key: 'foo', start: 2)
+          expect(records.length).to eq 3
+          expect(records.first.bar).to eq 2
+          expect(records.last.bar).to eq 4
+        end
+      end
+      context 'end value provided' do
+        it 'should return records with a range key less than or equal to the start value' do
+          records = TestClassWithRange.query(hash_key: 'foo', end: 2)
+          expect(records.length).to eq 2
+          expect(records.first.bar).to eq 1
+          expect(records.last.bar).to eq 2
+        end
+      end
+      context 'start and end values provided' do
+        it 'should return records between the two values inclusive' do
+          records = TestClassWithRange.query(hash_key: 'foo', start: 1, end: 3)
+          expect(records.length).to eq 3
+          expect(records.first.bar).to eq 1
+          expect(records.last.bar).to eq 3
+        end
+      end
+      context 'neither value provided' do
+        it 'should return all records belonging to that hash key' do
+          records = TestClassWithRange.query(hash_key: 'foo')
+          expect(records.length).to eq 4
+          expect(records.first.bar).to eq 1
+          expect(records.last.bar).to eq 4
+        end
+      end
+
+      context 'a non-numeric range field' do
+        it 'should raise an error' do
+          class TestClassWithStringRange < Dynamini::Base
+            self.in_memory = true
+            set_hash_key :group
+            set_range_key :user_name
+          end
+          expect{ TestClassWithStringRange.query(hash_key: 'registered', start: 'a') }.to raise_error TypeError
+        end
+      end
+
+      context 'hash key does not exist' do
+        it 'should return an empty array' do
+          expect(TestClassWithRange.query(hash_key: 'non-existent key')).to eq([])
         end
       end
     end
@@ -345,10 +403,10 @@ describe Dynamini::Base do
         end
 
         it 'should initialize a new object with hash key and range key' do
-          new_record = TestClassWithRange.find_or_new(1, 'range_key')
+          new_record = TestClassWithRange.find_or_new(1, 6)
           expect(new_record.new_record?).to be_truthy
           expect(new_record.foo).to eq(1)
-          expect(new_record.bar).to eq('range_key')
+          expect(new_record.bar).to eq(6)
         end
       end
     end

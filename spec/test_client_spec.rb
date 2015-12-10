@@ -96,4 +96,75 @@ describe Dynamini::TestClient do
       end
     end
   end
+
+  describe '#query' do
+
+    let(:test_client) {Dynamini::TestClient.new(:hash_key_field, :range_key_field)}
+
+    before do
+      4.times do |i|
+        test_client.update_item(table_name: table_name, key: {hash_key_field: 'foo', range_key_field: i + 1}, attribute_updates: { abc: { value: 'abc', action: 'PUT'}})
+      end
+    end
+    context 'with LE operator' do
+      it 'should return all items with range key less than or equal to the provided value' do
+        response = test_client.query(
+            table_name: table_name,
+            key_condition_expression: "hash_key_field = :h AND user_id <= :e",
+            expression_attribute_values: {
+              ":h" => 'foo',
+              ":e" => 2
+            }
+        )
+        expect(response.items.length).to eq(2)
+        expect(response.items.first[:range_key_field]).to eq(1)
+        expect(response.items.last[:range_key_field]).to eq(2)
+      end
+    end
+    context 'with GE operator' do
+      it 'should return all items with range key greater than or equal to the provided value' do
+        response = test_client.query(
+            table_name: table_name,
+            key_condition_expression: "hash_key_field = :h AND user_id >= :s",
+            expression_attribute_values: {
+                ":h" => 'foo',
+                ":s" => 2
+            }
+        )
+        expect(response.items.length).to eq(3)
+        expect(response.items.first[:range_key_field]).to eq(2)
+        expect(response.items.last[:range_key_field]).to eq(4)
+      end
+    end
+    context 'with BETWEEN operator' do
+      it 'should return all items with range key between the provided values' do
+        response = test_client.query(
+            table_name: table_name,
+            key_condition_expression: "hash_key_field = :h AND user_id BETWEEN :s AND :e",
+            expression_attribute_values: {
+                ":h" => 'foo',
+                ":s" => 2,
+                ":e" => 3
+            }
+        )
+        expect(response.items.length).to eq(2)
+        expect(response.items.first[:range_key_field]).to eq(2)
+        expect(response.items.last[:range_key_field]).to eq(3)
+      end
+    end
+    context 'with no operator' do
+      it 'should return all items with range key between the provided values' do
+        response = test_client.query(
+            table_name: table_name,
+            key_condition_expression: "hash_key_field = :h",
+            expression_attribute_values: {
+                ":h" => 'foo'
+            }
+        )
+        expect(response.items.length).to eq(4)
+        expect(response.items.first[:range_key_field]).to eq(1)
+        expect(response.items.last[:range_key_field]).to eq(4)
+      end
+    end
+  end
 end

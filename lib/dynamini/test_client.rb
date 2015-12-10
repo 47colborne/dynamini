@@ -90,6 +90,43 @@ module Dynamini
       @data[args[:table_name]].delete(args[:key][hash_key_attr])
     end
 
+    def query(args = {})
+      # Possible key condition structures:
+      # "foo = val"
+      # "foo = val AND bar <= val2"
+      # "foo = val AND bar >= val2"
+      # "foo = val AND bar BETWEEN val2 AND val3"
+
+      args[:expression_attribute_values].each do |symbol, value|
+        args[:key_condition_expression].gsub!(symbol, value.to_s)
+      end
+
+      tokens = args[:key_condition_expression].split(/\s+/)
+      hash_key = tokens[2]
+      case tokens[5]
+        when ">="
+          start_val = tokens[6]
+          end_val = nil
+        when "<="
+          start_val = nil
+          end_val = tokens[6]
+        when "BETWEEN"
+          start_val = tokens[6]
+          end_val = tokens[8]
+        else
+          start_val = nil
+          end_val = nil
+      end
+      parent = @data[args[:table_name]][hash_key]
+      return OpenStruct.new(items:[]) unless parent
+
+      selected = parent.values
+      selected = selected.select{ |item| item[@range_key_attr] >= start_val.to_f } if start_val
+      selected = selected.select{ |item| item[@range_key_attr] <= end_val.to_f } if end_val
+
+      OpenStruct.new(items: selected)
+    end
+
     def reset
       @data = {}
     end

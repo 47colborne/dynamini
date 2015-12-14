@@ -29,6 +29,7 @@ Instance methods:
 * touch
 * changes
 * changed
+* _was (e.g. model.foo_was, model.bar_was)
 * new_record?
 * updated_at
 * created_at

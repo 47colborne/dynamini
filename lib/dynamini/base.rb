@@ -433,6 +433,8 @@ module Dynamini
         attribute = name[0..-2].to_sym
         new_value = args.first
         write_attribute(attribute, new_value)
+      elsif was_method?(name)
+        __was(name)
       elsif read_method?(name)
         read_attribute(name)
       else
@@ -446,6 +448,10 @@ module Dynamini
 
     def write_method?(name)
       name =~ /^([a-zA-Z][-_\w]*)=.*$/
+    end
+
+    def was_method?(name)
+      read_method?(name.to_s) && name.to_s.end_with?('_was')
     end
 
     def self.define_handled_getter(column, format_class, options = {})
@@ -467,7 +473,7 @@ module Dynamini
     end
 
     def respond_to_missing?(name, include_private = false)
-      @attributes.keys.include?(name) || write_method?(name) || super
+      @attributes.keys.include?(name) || write_method?(name) || was_method?(name) || super
     end
 
     def write_attribute(attribute, new_value, record_change = true)
@@ -495,6 +501,12 @@ module Dynamini
     def attribute_callback(procs, handle, value)
       callback = procs[handle[:format]]
       value.is_a?(Array) ? value.map { |e| callback.call(e) } : callback.call(value)
+    end
+
+    def __was(name)
+      attr_name = name[0..-5].to_sym
+      raise ArgumentError unless (@attributes[attr_name] || handles[attr_name])
+      @changes[attr_name].compact.present? ? @changes[attr_name][0] : read_attribute(attr_name)
     end
 
     def handles

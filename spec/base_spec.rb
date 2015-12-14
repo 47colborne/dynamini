@@ -870,6 +870,76 @@ describe Dynamini::Base do
       end
     end
 
+    describe '#__was' do
+
+      context 'nonexistent attribute' do
+        it 'should raise an error' do
+          expect{ Dynamini::Base.new.thing_was }.to raise_error ArgumentError
+        end
+      end
+
+      context 'after saving' do
+        it 'should clear all _was values' do
+          model = Dynamini::Base.new
+          model.new_val = 'new'
+          model.save
+          expect(model.new_val_was).to eq('new')
+        end
+      end
+
+      context 'new record' do
+
+        subject(:model) { Dynamini::Base.new(baz: 'baz') }
+        it { is_expected.to respond_to(:baz_was) }
+
+        context 'handled attribute with default' do
+          it 'should return the default value' do
+            Dynamini::Base.handle(:num, :integer, default: 2)
+            expect(model.num_was).to eq(2)
+          end
+        end
+
+        context 'handled attribute with no default' do
+          it 'should return nil' do
+            Dynamini::Base.handle(:num, :integer)
+            expect(model.num_was).to be_nil
+          end
+        end
+
+        context 'newly assigned attribute' do
+          it 'should return nil' do
+            model.new_attribute = 'hello'
+            expect(model.new_attribute_was).to be_nil
+          end
+        end
+      end
+
+      context 'previously saved record' do
+        subject(:model) { Dynamini::Base.new({ baz: 'baz', nil_val: nil }, false) }
+        context 'unchanged attribute' do
+          it 'should return the current value' do
+            expect(model.baz_was).to eq('baz')
+          end
+        end
+
+        context 'newly assigned attribute or attribute changed from explicit nil' do
+          it 'should return nil' do
+            model.nil_val = 'no longer nil'
+            model.new_val = 'new'
+            expect(model.nil_val_was).to be_nil
+            expect(model.new_val_was).to be_nil
+          end
+        end
+
+        context 'attribute changed from value to value' do
+          it 'should return the old value' do
+            model.baz = 'baz2'
+            expect(model.baz_was).to eq('baz')
+          end
+        end
+      end
+    end
+
     describe '#changes' do
       it 'should not return the hash key or range key' do
         Dynamini::Base.set_range_key(:range_key)

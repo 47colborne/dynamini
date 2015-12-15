@@ -464,7 +464,7 @@ describe Dynamini::Base do
 
       it 'should append changed attributes to @changed' do
         model.assign_attributes(name: 'Widget', price: '5')
-        expect(model.changed).to eq ['name', 'price']
+        expect(model.changed).to eq ['price']
       end
     end
 

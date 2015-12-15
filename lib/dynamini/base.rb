@@ -430,9 +430,7 @@ module Dynamini
 
     def method_missing(name, *args, &block)
       if write_method?(name)
-        attribute = name[0..-2].to_sym
-        new_value = args.first
-        write_attribute(attribute, new_value)
+        write_attribute(attribute_name(name), args.first)
       elsif was_method?(name)
         __was(name)
       elsif read_method?(name)
@@ -440,6 +438,10 @@ module Dynamini
       else
         super
       end
+    end
+
+    def attribute_name(name)
+      name[0..-2].to_sym
     end
 
     def read_method?(name)
@@ -451,7 +453,8 @@ module Dynamini
     end
 
     def was_method?(name)
-      read_method?(name.to_s) && name.to_s.end_with?('_was')
+      method_name = name.to_s
+      read_method?(method_name) && method_name.end_with?('_was')
     end
 
     def self.define_handled_getter(column, format_class, options = {})
@@ -476,13 +479,13 @@ module Dynamini
       @attributes.keys.include?(name) || write_method?(name) || was_method?(name) || super
     end
 
-    def write_attribute(attribute, new_value, record_change = true)
+    def write_attribute(attribute, new_value, change = true)
       old_value = read_attribute(attribute)
       if (handle = handles[attribute.to_sym]) && !new_value.nil?
         new_value = attribute_callback(SETTER_PROCS, handle, new_value)
       end
       @attributes[attribute] = new_value
-      record_change(attribute, new_value, old_value) if record_change
+      record_change(attribute, new_value, old_value) if change && new_value != old_value
     end
 
     def record_change(attribute, new_value, old_value)

@@ -63,7 +63,6 @@ class Vehicle < Dynamini::Base
     set_hash_key :model       # defaults to :id if not set
     set_range_key :vin        # must be set if your AWS table is configured with a range key
     
-
     # ...All the rest of your class methods, instance methods, and validators
 end
 ```

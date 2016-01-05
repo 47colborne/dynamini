@@ -100,7 +100,7 @@ The magic fields updated_at and created_at are handled as :time by default.
 
 ## Querying With Range Keys
 
-Dynamini includes a query function that's much more narrow than ActiveRecord's where function. It's designed to retrieve a selection of records that belong to a given hash key but have various range key values. To use .query, your table needs to be configured with a range key, and you need to :handle that range field as a fundamentally numeric type - integer, float, date, or time.
+Dynamini includes a query function that's much more narrow than ActiveRecord's where function. It's designed to retrieve a selection of records that belong to a given hash key but have various range key values. To use .query, your table needs to be configured with a range key, and you need to :handle that range field as a fundamentally numeric type - integer, float, date, or time. If your range key field isn't numeric, you won't be able to .query, but you'll still be able to .find your records normally.
 
 If you aren't sure how or why to use range keys (also known as sort keys) with your DynamoDB instance, check here for help: http://stackoverflow.com/a/27348364
 

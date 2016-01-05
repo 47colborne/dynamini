@@ -1,7 +1,10 @@
+require_relative 'batch_operations'
+
 module Dynamini
   # Core db interface class.
   class Base
     include ActiveModel::Validations
+    extend Dynamini::BatchOperations
 
     attr_reader :attributes
 
@@ -11,8 +14,6 @@ module Dynamini
           created_at: { format: :time, options: {} },
           updated_at: { format: :time, options: {} }
         }
-
-    BATCH_SIZE = 25
 
     GETTER_PROCS = {
         integer:  proc { |v| v.to_i },
@@ -35,7 +36,7 @@ module Dynamini
     }
 
     class << self
-      attr_writer :batch_write_queue, :in_memory
+      attr_writer :in_memory
       attr_reader :range_key
 
       def table_name
@@ -67,10 +68,6 @@ module Dynamini
 
       def in_memory
         @in_memory || false
-      end
-
-      def batch_write_queue
-        @batch_write_queue ||= []
       end
 
       def client
@@ -121,18 +118,6 @@ module Dynamini
         end
       end
 
-      def batch_find(ids = [])
-        return [] if ids.length < 1
-        objects = []
-        fail StandardError, 'Batch is limited to 100 items' if ids.length > 100
-        key_structure = ids.map { |i| { hash_key => i.to_s } }
-        response = dynamo_batch_get(key_structure)
-        response.responses[table_name].each do |item|
-          objects << new(item.symbolize_keys, false)
-        end
-        objects
-      end
-
       def query(args = {})
         fail ArgumentError, 'You must provide a :hash_key.' unless args[:hash_key]
         fail TypeError, 'Your range key must be handled as an integer, float, date, or time.' unless self.range_is_numeric?
@@ -143,23 +128,6 @@ module Dynamini
           objects << new(item.symbolize_keys, false)
         end
         objects
-      end
-
-      def enqueue_for_save(attributes, options = {})
-        model = new(attributes, true)
-        model.generate_timestamps! unless options[:skip_timestamps]
-        if model.valid?
-          batch_write_queue << model
-          flush_queue! if batch_write_queue.length == BATCH_SIZE
-          return true
-        end
-        false
-      end
-
-      def flush_queue!
-        response = dynamo_batch_save(batch_write_queue)
-        self.batch_write_queue = []
-        response
       end
 
     end
@@ -303,27 +271,6 @@ module Dynamini
           key: key,
           attribute_updates: increment_updates(attributes, opts)
       )
-    end
-
-    def self.dynamo_batch_get(key_struct)
-      client.batch_get_item(
-          request_items: {
-              table_name => { keys: key_struct }
-          }
-      )
-    end
-
-    def self.dynamo_batch_save(model_array)
-      put_requests = []
-      model_array.each do |model|
-        put_requests << { put_request: {
-            item: model.attributes.reject{ |_k, v| v.blank? }.stringify_keys
-        } }
-      end
-      request_options = { request_items: {
-          "#{table_name}" => put_requests }
-      }
-      client.batch_write_item(request_options)
     end
 
     def self.dynamo_query(args)

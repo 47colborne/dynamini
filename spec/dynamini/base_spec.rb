@@ -1,6 +1,5 @@
 require 'spec_helper'
 
-
 describe Dynamini::Base do
   let(:model_attributes) {
     {
@@ -21,12 +20,7 @@ describe Dynamini::Base do
   end
 
   before do
-    Dynamini::Base.in_memory = true
     model.save
-  end
-
-  after do
-    Dynamini::Base.client.reset
   end
 
   describe '.set_table_name' do
@@ -278,105 +272,6 @@ describe Dynamini::Base do
           expect(found_model.baz).to eq 1
           expect(found_model.created_at).to_not be_nil
           expect(found_model.updated_at).to_not be_nil
-        end
-      end
-    end
-
-    describe '.enqueue_for_save' do
-      before do
-        Dynamini::Base.batch_write_queue = []
-      end
-      context 'when enqueuing a valid object' do
-        it 'should return true' do
-          expect(
-              Dynamini::Base.enqueue_for_save(model_attributes)
-          ).to eq true
-        end
-        it 'should append the object to the batch_write_queue' do
-          Dynamini::Base.enqueue_for_save(model_attributes)
-          expect(Dynamini::Base.batch_write_queue.length).to eq 1
-        end
-      end
-
-      context 'when enqueuing an invalid object' do
-        let(:bad_attributes) { {name: 'bad', id: nil} }
-        before do
-          allow_any_instance_of(Dynamini::Base).to receive(:valid?).and_return(false)
-        end
-        it 'should return false' do
-          expect(Dynamini::Base.enqueue_for_save(bad_attributes)).to eq false
-        end
-        it 'should not append the object to the queue' do
-          Dynamini::Base.enqueue_for_save(bad_attributes)
-          expect(Dynamini::Base.batch_write_queue.length).to eq 0
-        end
-      end
-
-      context 'when reaching the batch size threshold' do
-        before do
-          stub_const('Dynamini::Base::BATCH_SIZE', 1)
-          allow(Dynamini::Base).to receive(:dynamo_batch_save)
-        end
-        it 'should return true' do
-          expect(Dynamini::Base.enqueue_for_save(model_attributes)).to eq true
-        end
-        it 'should flush the queue' do
-          Dynamini::Base.enqueue_for_save(model_attributes)
-          expect(Dynamini::Base.batch_write_queue).to be_empty
-        end
-      end
-    end
-
-    describe '.flush_queue!' do
-      it 'should empty the queue' do
-        allow(Dynamini::Base).to receive(:dynamo_batch_save)
-        Dynamini::Base.enqueue_for_save(model_attributes)
-        Dynamini::Base.flush_queue!
-        expect(Dynamini::Base.batch_write_queue).to be_empty
-      end
-      it 'should return the response from the db operation' do
-        expect(Dynamini::Base).to receive(:dynamo_batch_save).and_return('foo')
-        expect(Dynamini::Base.flush_queue!).to eq 'foo'
-      end
-      it 'should send the contents of the queue to dynamo_batch_save' do
-        Dynamini::Base.enqueue_for_save(model_attributes)
-        expect(Dynamini::Base).to receive(:dynamo_batch_save).with(
-                                      Dynamini::Base.batch_write_queue
-                                  )
-        Dynamini::Base.flush_queue!
-      end
-    end
-
-    describe '.dynamo_batch_save' do
-      it 'should batch write the models to dynamo' do
-        model2 = Dynamini::Base.create(id: '123')
-        model3 = Dynamini::Base.create(id: '456')
-        Dynamini::Base.dynamo_batch_save([model2, model3])
-        expect(Dynamini::Base.find('123')).to_not be_nil
-        expect(Dynamini::Base.find('456')).to_not be_nil
-      end
-    end
-
-    describe '.batch_find' do
-      context 'when requesting 0 items' do
-        it 'should return an empty array' do
-          expect(Dynamini::Base.batch_find).to eq []
-        end
-      end
-      context 'when requesting 2 items' do
-        it 'should return a 2-length array containing each item' do
-          Dynamini::Base.create(id: '4321')
-          objects = Dynamini::Base.batch_find(['abcd1234', '4321'])
-          expect(objects.length).to eq 2
-          expect(objects.first.id).to eq model.id
-          expect(objects.last.id).to eq '4321'
-        end
-      end
-      context 'when requesting too many items' do
-        it 'should raise an error' do
-          a = []
-          150.times { a << 'foo' }
-          expect { Dynamini::Base.batch_find(a) }.to raise_error StandardError
         end
       end
     end

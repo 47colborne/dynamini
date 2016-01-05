@@ -54,12 +54,15 @@ end
 ```
 
 Then set up your model. You'll need to have it inherit from Dynamini::Base, then identify the primary key and table name to match your DynamoDB setup.
-Here's what a sample model looks like.
+
+Here's what a sample model looks like. This one includes a range key - sometimes your table will only need a hash key. If you aren't sure how or why to use range keys (also known as sort keys) with your DynamoDB instance, check here for help: http://stackoverflow.com/a/27348364
+
 ```ruby
 class Vehicle < Dynamini::Base
-    set_hash_key :vin           # defaults to :id if not set
-    set_range_key :manufacturer # must be set but only if your DynamoDB table is configured with a range key
-    set_table_name 'desks-dev'  # defaults to the pluralized, downcased model name if not set
+    set_table_name 'cars-dev' # must match the table name configured in AWS
+    set_hash_key :model       # defaults to :id if not set
+    set_range_key :vin        # must be set if your AWS table is configured with a range key
+    
 
     # ...All the rest of your class methods, instance methods, and validators
 end
@@ -101,8 +104,6 @@ The magic fields updated_at and created_at are handled as :time by default.
 ## Querying With Range Keys
 
 Dynamini includes a query function that's much more narrow than ActiveRecord's where function. It's designed to retrieve a selection of records that belong to a given hash key but have various range key values. To use .query, your table needs to be configured with a range key, and you need to :handle that range field as a fundamentally numeric type - integer, float, date, or time. If your range key field isn't numeric, you won't be able to .query, but you'll still be able to .find your records normally.
-
-If you aren't sure how or why to use range keys (also known as sort keys) with your DynamoDB instance, check here for help: http://stackoverflow.com/a/27348364
 
 Query takes three arguments; a mandatory :hash_key, an optional :start, and an optional :end. Here's how you'd use it to find daily temperature data for a given city, selecting for specific date ranges:
 

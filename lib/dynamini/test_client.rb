@@ -75,12 +75,13 @@ module Dynamini
       OpenStruct.new(responses: responses)
     end
 
+    #FIXME Add range key support
     def batch_write_item(request_options)
       request_options[:request_items].each do |k, v|
         @data[k] ||= {}
         v.each do |request_hash|
           item = request_hash[:put_request][:item]
-          key = item[hash_key_attr]
+          key = item[hash_key_attr.to_s]
           @data[k][key] = item
         end
       end

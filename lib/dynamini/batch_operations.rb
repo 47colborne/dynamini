@@ -2,6 +2,15 @@ module Dynamini
   module BatchOperations
     BATCH_SIZE = 25
 
+    def import(models)
+      models.each_slice(25) do |batch|
+        batch.each do |model|
+          model.generate_timestamps!
+        end
+        dynamo_batch_save(batch)
+      end
+    end
+
     attr_writer :batch_write_queue
 
     def batch_write_queue
@@ -38,14 +47,15 @@ module Dynamini
     end
 
     def dynamo_batch_save(model_array)
-      put_requests = []
-      model_array.each do |model|
-        put_requests << {put_request: {
-            item: model.attributes.reject { |_k, v| v.blank? }.stringify_keys
-        }}
+      put_requests = model_array.map do |model|
+        {
+            put_request: {
+                item: model.attributes.reject { |_k, v| v.blank? }.stringify_keys
+            }
+        }
       end
-      request_options = {request_items: {
-          table_name => put_requests}
+      request_options = {
+          request_items: {table_name => put_requests}
       }
       client.batch_write_item(request_options)
     end

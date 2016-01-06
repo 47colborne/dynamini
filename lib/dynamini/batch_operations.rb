@@ -1,20 +1,15 @@
 module Dynamini
   module BatchOperations
-    BATCH_SIZE = 25
 
     def import(models)
+      # Max batch size is 25, per Dynamo BatchWriteItem docs
+
       models.each_slice(25) do |batch|
         batch.each do |model|
           model.generate_timestamps!
         end
         dynamo_batch_save(batch)
       end
-    end
-
-    attr_writer :batch_write_queue
-
-    def batch_write_queue
-      @batch_write_queue ||= []
     end
 
     def batch_find(ids = [])
@@ -27,23 +22,6 @@ module Dynamini
         objects << new(item.symbolize_keys, false)
       end
       objects
-    end
-
-    def enqueue_for_save(attributes, options = {})
-      model = new(attributes, true)
-      model.generate_timestamps! unless options[:skip_timestamps]
-      if model.valid?
-        batch_write_queue << model
-        flush_queue! if batch_write_queue.length == BATCH_SIZE
-        return true
-      end
-      false
-    end
-
-    def flush_queue!
-      response = dynamo_batch_save(batch_write_queue)
-      self.batch_write_queue = []
-      response
     end
 
     def dynamo_batch_save(model_array)

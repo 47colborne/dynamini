@@ -14,6 +14,7 @@ Class methods:
 * find(hash_key, range_key)
 * exists?(hash_key, range_key)
 * find_or_new(hash_key, range_key)
+* import(model_array)
 
 Note: The range_key arguments are only necessary if your DynamoDB table is configured with a range key.
 

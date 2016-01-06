@@ -6,7 +6,7 @@ module Dynamini
 
       models.each_slice(25) do |batch|
         batch.each do |model|
-          model.generate_timestamps!
+          model.send(:generate_timestamps!)
         end
         dynamo_batch_save(batch)
       end

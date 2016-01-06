@@ -17,8 +17,15 @@ describe Dynamini::BatchOperations do
 
   describe '.import' do
     it 'should generate timestamps for each model' do
-      expect_any_instance_of(subject).to receive(:generate_timestamps!).twice
-      subject.import([model, model])
+      model1 = Dynamini::Base.new(model_attributes)
+      model2 = Dynamini::Base.new(model_attributes.merge(id: '2'))
+
+      subject.import([model1, model2])
+
+      expect(subject.find(model1.id).updated_at).not_to be_nil
+      expect(subject.find(model1.id).created_at).not_to be_nil
+      expect(subject.find(model2.id).updated_at).not_to be_nil
+      expect(subject.find(model2.id).created_at).not_to be_nil
     end
 
     it 'should call .dynamo_batch_save with batches of 25 models' do
@@ -30,10 +37,6 @@ describe Dynamini::BatchOperations do
   end
 
   describe '.dynamo_batch_save' do
-    before do
-      Dynamini::Base.set_range_key(nil)
-    end
-
     it 'should batch write the models to dynamo' do
       model2 = Dynamini::Base.new(id: '123')
       model3 = Dynamini::Base.new(id: '456')

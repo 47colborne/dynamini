@@ -56,7 +56,8 @@ describe Dynamini::Base do
 
     describe '.handle' do
 
-      class HandledClass < Dynamini::Base; end
+      class HandledClass < Dynamini::Base;
+      end
 
       context 'when reading the handled attirubte' do
         before { HandledClass.handle :price, :integer, default: 9 }
@@ -70,7 +71,7 @@ describe Dynamini::Base do
         end
         it 'should return an array with formated item if handled' do
           object = HandledClass.new(price: ["1", "2"])
-          expect(object.price).to eq([1,2])
+          expect(object.price).to eq([1, 2])
         end
       end
 
@@ -192,7 +193,7 @@ describe Dynamini::Base do
             set_hash_key :group
             set_range_key :user_name
           end
-          expect{ TestClassWithStringRange.query(hash_key: 'registered', start: 'a') }.to raise_error TypeError
+          expect { TestClassWithStringRange.query(hash_key: 'registered', start: 'a') }.to raise_error TypeError
         end
       end
 
@@ -769,7 +770,7 @@ describe Dynamini::Base do
 
       context 'nonexistent attribute' do
         it 'should raise an error' do
-          expect{ Dynamini::Base.new.thing_was }.to raise_error ArgumentError
+          expect { Dynamini::Base.new.thing_was }.to raise_error ArgumentError
         end
       end
 
@@ -810,7 +811,7 @@ describe Dynamini::Base do
       end
 
       context 'previously saved record' do
-        subject(:model) { Dynamini::Base.new({ baz: 'baz', nil_val: nil }, false) }
+        subject(:model) { Dynamini::Base.new({baz: 'baz', nil_val: nil}, false) }
         context 'unchanged attribute' do
           it 'should return the current value' do
             expect(model.baz_was).to eq('baz')
@@ -840,6 +841,7 @@ describe Dynamini::Base do
         Dynamini::Base.set_range_key(:range_key)
         model.instance_variable_set(:@changes, {id: 'test_hash_key', range_key: "test_range_key"})
         expect(model.changes).to eq({})
+        Dynamini::Base.set_range_key(nil)
       end
 
       context 'no change detected' do
@@ -851,7 +853,7 @@ describe Dynamini::Base do
       context 'attribute changed' do
         before { model.price = 1 }
         it 'should include the changed attribute' do
-          expect(model.changes['price']).to eq([9.99,1])
+          expect(model.changes['price']).to eq([9.99, 1])
         end
       end
 
@@ -875,7 +877,7 @@ describe Dynamini::Base do
 
     describe '#changed' do
       it 'should stringify the keys of changes' do
-        allow(model).to receive(:changes).and_return({ 'price' => [1,2], 'name' => ['a','b'] })
+        allow(model).to receive(:changes).and_return({'price' => [1, 2], 'name' => ['a', 'b']})
         expect(model.changed).to eq(['price', 'name'])
       end
     end

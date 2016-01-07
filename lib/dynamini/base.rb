@@ -1,10 +1,12 @@
 require_relative 'batch_operations'
+require_relative 'querying'
 
 module Dynamini
   # Core db interface class.
   class Base
     include ActiveModel::Validations
     extend Dynamini::BatchOperations
+    extend Dynamini::Querying
 
     attr_reader :attributes
 
@@ -91,45 +93,6 @@ module Dynamini
         model = new(attributes, true)
         model if model.save!(options)
       end
-
-      def find(hash_value, range_value = nil)
-        fail 'Range key cannot be blank.' if range_key && range_value.nil?
-        response = client.get_item(table_name: table_name, key: create_key_hash(hash_value, range_value))
-        raise 'Item not found.' unless response.item
-        new(response.item.symbolize_keys, false)
-      end
-
-      def exists?(hash_value, range_value = nil)
-        fail 'Range key cannot be blank.' if range_key && range_value.nil?
-
-        r = client.get_item(table_name: table_name, key: create_key_hash(hash_value, range_value))
-        r.item.present?
-      end
-
-      def find_or_new(hash_value, range_value = nil)
-        fail 'Key cannot be blank.' if (hash_value.nil? || hash_value == '')
-        fail 'Range key cannot be blank.' if range_key && range_value.nil?
-
-        r = client.get_item(table_name: table_name, key: create_key_hash(hash_value, range_value))
-        if r.item
-          new(r.item.symbolize_keys, false)
-        else
-          range_key ? new(hash_key => hash_value, range_key => range_value) : new(hash_key => hash_value)
-        end
-      end
-
-      def query(args = {})
-        fail ArgumentError, 'You must provide a :hash_key.' unless args[:hash_key]
-        fail TypeError, 'Your range key must be handled as an integer, float, date, or time.' unless self.range_is_numeric?
-
-        response = self.dynamo_query(args)
-        objects = []
-        response.items.each do |item|
-          objects << new(item.symbolize_keys, false)
-        end
-        objects
-      end
-
     end
 
     #### Instance Methods
@@ -273,37 +236,6 @@ module Dynamini
       )
     end
 
-    def self.dynamo_query(args)
-      expression_attribute_values = self.build_expression_attribute_values(args)
-      key_condition_expression = self.build_key_condition_expression(args)
-
-      client.query(
-          table_name: table_name,
-          key_condition_expression: key_condition_expression,
-          expression_attribute_values: expression_attribute_values
-      )
-    end
-
-    def self.build_expression_attribute_values(args)
-      expression_values = {}
-      expression_values[':h'] = args[:hash_key]
-      expression_values[':s'] = args[:start] if args[:start]
-      expression_values[':e'] = args[:end] if args[:end]
-      expression_values
-    end
-
-    def self.build_key_condition_expression(args)
-      expression = "#{hash_key} = :h"
-      if args[:start] && args[:end]
-        expression += " AND #{range_key} BETWEEN :s AND :e"
-      elsif args[:start]
-        expression += " AND #{range_key} >= :s"
-      elsif args[:end]
-        expression += " AND #{range_key} <= :e"
-      end
-      expression
-    end
-
     def key
       key_hash = { self.class.hash_key => @attributes[self.class.hash_key] }
       key_hash[self.class.range_key] = @attributes[self.class.range_key] if self.class.range_key
@@ -315,30 +247,6 @@ module Dynamini
       key_hash[self.range_key] = range_value if self.range_key
       key_hash
     end
-
-    def self.build_range_expression(start_value, end_value)
-      operator = (
-        if start_value && end_value
-          'BETWEEN'
-        elsif start_value
-          'GE'
-        elsif end_value
-          'LE'
-        end
-      )
-      attribute_value_list = []
-
-      if handle = handles[range_key.to_sym]
-        attribute_value_list << attribute_callback(SETTER_PROCS, handle, start_value) if start_value
-        attribute_value_list << attribute_callback(SETTER_PROCS, handle, end_value) if end_value
-      else
-        attribute_value_list << start_value if start_value
-        attribute_value_list << end_value if end_value
-      end
-
-      {attribute_value_list: attribute_value_list, comparison_operator: operator}
-    end
-
 
     def attribute_updates
       changes.reduce({}) do |updates, (key, value)|

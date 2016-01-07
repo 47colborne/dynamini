@@ -184,4 +184,21 @@ describe Dynamini::TestClient do
       expect(test_client.data[table_name][2]).to eq(item2)
     end
   end
+
+  describe '#batch_get_item' do
+    let(:test_client) { Dynamini::TestClient.new(:id) }
+
+    before do
+      test_client.data[table_name] = {}
+      test_client.data[table_name]['foo'] = {id: 'foo', price: 1}
+    end
+
+    it 'should only return the items found' do
+      keys = [{id: 'foo'}, {id: 'bar'}]
+      request = {request_items: {table_name => {keys: keys}}}
+      result = test_client.batch_get_item(request)
+      expect(result.responses[table_name].length).to eq(1)
+      expect(result.responses[table_name].first[:id]).to eq('foo')
+    end
+  end
 end

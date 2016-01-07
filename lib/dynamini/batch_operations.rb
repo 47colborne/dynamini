@@ -1,3 +1,5 @@
+require 'ostruct'
+
 module Dynamini
   module BatchOperations
 
@@ -13,7 +15,7 @@ module Dynamini
     end
 
     def batch_find(ids = [])
-      return [] if ids.length < 1
+      return OpenStruct.new(found: [], not_found: []) if ids.length < 1
       objects = []
       fail StandardError, 'Batch is limited to 100 items' if ids.length > 100
       key_structure = ids.map { |i| {hash_key => i.to_s} }
@@ -21,7 +23,7 @@ module Dynamini
       response.responses[table_name].each do |item|
         objects << new(item.symbolize_keys, false)
       end
-      objects
+      OpenStruct.new(found: objects, not_found: ids - objects.map(&hash_key))
     end
 
     def dynamo_batch_save(model_array)

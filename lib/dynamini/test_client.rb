@@ -61,6 +61,7 @@ module Dynamini
       OpenStruct.new(item: attributes_hash)
     end
 
+    #FIXME Add range key support
     def batch_get_item(args = {})
       responses = {}
 
@@ -68,7 +69,7 @@ module Dynamini
         responses[k] = []
         v[:keys].each do |key_hash|
           item = @data[k][key_hash.values.first]
-          responses[k] << item
+          responses[k] << item unless item.nil?
         end
       end
 

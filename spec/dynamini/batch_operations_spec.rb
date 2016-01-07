@@ -52,16 +52,24 @@ describe Dynamini::BatchOperations do
     end
     context 'when requesting 0 items' do
       it 'should return an empty array' do
-        expect(Dynamini::Base.batch_find).to eq []
+        expect(Dynamini::Base.batch_find.found).to eq []
+        expect(Dynamini::Base.batch_find.not_found).to eq []
       end
     end
-    context 'when requesting 2 items' do
-      it 'should return a 2-length array containing each item' do
+    context 'when requesting multiple items' do
+      let(:result) { Dynamini::Base.batch_find(%w(abcd1234 4321 foo)) }
+      before do
         Dynamini::Base.create(id: '4321')
-        objects = Dynamini::Base.batch_find(['abcd1234', '4321'])
-        expect(objects.length).to eq 2
-        expect(objects.first.id).to eq model.id
-        expect(objects.last.id).to eq '4321'
+      end
+
+      it 'should return the found items' do
+        expect(result.found.length).to eq 2
+        expect(result.found.first.id).to eq model.id
+        expect(result.found.last.id).to eq '4321'
+      end
+
+      it 'should return the hash keys of the items not found' do
+        expect(result.not_found).to eq(['foo'])
       end
     end
     context 'when requesting too many items' do

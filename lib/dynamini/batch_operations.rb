@@ -17,7 +17,7 @@ module Dynamini
     def batch_find(ids = [])
       return OpenStruct.new(found: [], not_found: []) if ids.length < 1
       objects = []
-      key_structure = ids.map { |i| {hash_key => i.to_s} }
+      key_structure = ids.map { |i| {hash_key => i} }
       key_structure.each_slice(100) do |keys|
         response = dynamo_batch_get(keys)
         response.responses[table_name].each do |item|

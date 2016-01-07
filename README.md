@@ -39,8 +39,6 @@ We've included ActiveModel::Validations, so any validators will still work and b
 There are also some new functions specific to DynamoDB's API:
 
 * batch_find([keys]) - to retrieve multiple objects at once.
-* enqueue_for_save(attributes) - to add your object to the batch write queue, which automatically sends a batch_save at length 25.
-* flush_queue! - to send the items in batch_save queue before reaching length 25.
 * increment!({attribute1: amount, attribute2: amount}) - to update your record using DynamoDB's Atomic Counter functionality. (For more information, see http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html#WorkingWithItems.AtomicCounters )
 
 ## Configuration

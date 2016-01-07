@@ -56,6 +56,7 @@ describe Dynamini::BatchOperations do
         expect(Dynamini::Base.batch_find.not_found).to eq []
       end
     end
+
     context 'when requesting multiple items' do
       let(:result) { Dynamini::Base.batch_find(%w(abcd1234 4321 foo)) }
       before do
@@ -72,11 +73,22 @@ describe Dynamini::BatchOperations do
         expect(result.not_found).to eq(['foo'])
       end
     end
-    context 'when requesting too many items' do
-      it 'should raise an error' do
-        a = []
-        150.times { a << 'foo' }
-        expect { Dynamini::Base.batch_find(a) }.to raise_error StandardError
+
+    context 'when requesting over 100 items' do
+      let(:ids) { Array.new(50, 'foo') +  Array.new(51, '4321')}
+      before do
+        Dynamini::Base.create(id: '4321')
+      end
+
+      it 'should call dynamo once for each 100 items' do
+        expect(Dynamini::Base).to receive(:dynamo_batch_get).twice.and_call_original
+        Dynamini::Base.batch_find(ids)
+      end
+
+      it 'should return the combined responses of multiple dynamo calls' do
+        result = Dynamini::Base.batch_find(ids)
+        expect(result.found.length).to eq(51)
+        expect(result.not_found.length).to eq(50)
       end
     end
   end

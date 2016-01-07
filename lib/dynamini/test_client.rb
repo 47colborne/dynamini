@@ -65,11 +65,11 @@ module Dynamini
     def batch_get_item(args = {})
       responses = {}
 
-      args[:request_items].each do |k, v|
-        responses[k] = []
-        v[:keys].each do |key_hash|
-          item = @data[k][key_hash.values.first]
-          responses[k] << item unless item.nil?
+      args[:request_items].each do |table_name, get_request|
+        responses[table_name] = []
+        get_request[:keys].each do |key_hash|
+          item = get_table(table_name)[key_hash.values.first]
+          responses[table_name] << item unless item.nil?
         end
       end
 
@@ -78,18 +78,17 @@ module Dynamini
 
     #FIXME Add range key support
     def batch_write_item(request_options)
-      request_options[:request_items].each do |k, v|
-        @data[k] ||= {}
-        v.each do |request_hash|
+      request_options[:request_items].each do |table_name, put_requests|
+        put_requests.each do |request_hash|
           item = request_hash[:put_request][:item]
           key = item[hash_key_attr.to_s]
-          @data[k][key] = item
+          get_table(table_name)[key] = item
         end
       end
     end
 
     def delete_item(args = {})
-      @data[args[:table_name]].delete(args[:key][hash_key_attr])
+      get_table(args[:table_name]).delete(args[:key][hash_key_attr])
     end
 
     def query(args = {})
@@ -119,7 +118,7 @@ module Dynamini
           start_val = nil
           end_val = nil
       end
-      parent = @data[args[:table_name]][hash_key]
+      parent = get_table(args[:table_name])[hash_key]
       return OpenStruct.new(items:[]) unless parent
 
       selected = parent.values
@@ -143,10 +142,11 @@ module Dynamini
 
       if args[:attribute_updates]
         args[:attribute_updates].each do |k, v|
+          table = get_table(args[:table_name])
 
-          if v[:action] == 'ADD' && @data[args[:table_name]][hash_key_value]
+          if v[:action] == 'ADD' && table[hash_key_value]
             # if record has been saved
-            data = @data[args[:table_name]][hash_key_value]
+            data = table[hash_key_value]
             data = (data[range_key_value] ||= {}) if range_key_value
 
             attribute_hash[k] = (v[:value] + data[k].to_f)

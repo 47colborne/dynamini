@@ -76,6 +76,17 @@ module Dynamini
       OpenStruct.new(responses: responses)
     end
 
+    # TODO add range key support
+    def batch_write_item(request_options)
+      request_options[:request_items].each do |table_name, put_requests|
+        put_requests.each do |request_hash|
+          item = request_hash[:put_request][:item]
+          key = item[hash_key_attr.to_s]
+          get_table(table_name)[key] = item
+        end
+      end
+    end
+
     def delete_item(args = {})
       get_table(args[:table_name]).delete(args[:key][hash_key_attr])
     end

@@ -22,7 +22,7 @@ module Dynamini
 
     def validate_incrementable_attribute(attribute, value)
       validate_new_increment_value(value)
-      validate_current_increment_value(attribute, value)
+      validate_current_increment_value(attribute  )
     end
 
     def validate_new_increment_value(value)
@@ -32,7 +32,7 @@ module Dynamini
       end
     end
 
-    def validate_current_increment_value(attribute, value)
+    def validate_current_increment_value(attribute)
       current_value = read_attribute(attribute)
       unless current_value.nil? || current_value.is_a?(Integer) || current_value.is_a?(Float) || current_value.is_a?(BigDecimal)
         fail StandardError, "Cannot increment a non-numeric non-nil value:

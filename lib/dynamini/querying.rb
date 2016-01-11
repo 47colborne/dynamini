@@ -16,8 +16,8 @@ module Dynamini
     end
 
     def find_or_new(hash_value, range_value = nil)
-      fail 'Key cannot be blank.' if (hash_value.nil? || hash_value == '')
-      fail 'Range key cannot be blank.' if range_key && range_value.nil?
+      validate_query_values(hash_value, range_value)
+
 
       r = client.get_item(table_name: table_name, key: create_key_hash(hash_value, range_value))
       if r.item
@@ -76,6 +76,11 @@ module Dynamini
         expression += " AND #{range_key} <= :e"
       end
       expression
+    end
+
+    def validate_query_values(hash_value, range_value)
+      fail 'Key cannot be blank.' if (hash_value.nil? || hash_value == '')
+      fail 'Range key cannot be blank.' if range_key && range_value.nil?
     end
   end
 end

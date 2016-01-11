@@ -39,6 +39,12 @@ module Dynamini
       objects
     end
 
+    protected
+
+    def range_is_numeric?
+      handles[@range_key] && [:integer, :time, :float, :date].include?(handles[@range_key][:format])
+    end
+
     private
 
     def dynamo_query(args)
@@ -71,31 +77,5 @@ module Dynamini
       end
       expression
     end
-
-    #FIXME unused method
-    def build_range_expression(start_value, end_value)
-      operator = (
-      if start_value && end_value
-        'BETWEEN'
-      elsif start_value
-        'GE'
-      elsif end_value
-        'LE'
-      end
-      )
-      attribute_value_list = []
-
-      if handle = handles[range_key.to_sym]
-        attribute_value_list << attribute_callback(SETTER_PROCS, handle, start_value) if start_value
-        attribute_value_list << attribute_callback(SETTER_PROCS, handle, end_value) if end_value
-      else
-        attribute_value_list << start_value if start_value
-        attribute_value_list << end_value if end_value
-      end
-
-      {attribute_value_list: attribute_value_list, comparison_operator: operator}
-    end
-
-
   end
 end

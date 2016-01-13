@@ -9,6 +9,7 @@ module Dynamini
   # Core db interface class.
   class Base
     include ActiveModel::Validations
+    extend ActiveModel::Callbacks
     extend Dynamini::BatchOperations
     extend Dynamini::Querying
     include Dynamini::ClientInterface
@@ -21,9 +22,11 @@ module Dynamini
     class_attribute :handles
 
     self.handles = {
-        created_at: { format: :time, options: {} },
-        updated_at: { format: :time, options: {} }
+        created_at: {format: :time, options: {}},
+        updated_at: {format: :time, options: {}}
     }
+
+    define_model_callbacks :save
 
     class << self
 
@@ -97,17 +100,22 @@ module Dynamini
     end
 
     def save(options = {})
-      @changes.empty? || (valid? && trigger_save(options))
+      run_callbacks :save do
+        @changes.empty? || (valid? && trigger_save(options))
+      end
     end
 
     def save!(options = {})
-      options[:validate] = true if options[:validate].nil?
+      run_callbacks :save do
 
-      unless @changes.empty?
-        if (options[:validate] && valid?) || !options[:validate]
-          trigger_save(options)
-        else
-          raise StandardError, errors.full_messages
+        options[:validate] = true if options[:validate].nil?
+
+        unless @changes.empty?
+          if (options[:validate] && valid?) || !options[:validate]
+            trigger_save(options)
+          else
+            raise StandardError, errors.full_messages
+          end
         end
       end
     end
@@ -148,13 +156,13 @@ module Dynamini
     end
 
     def key
-      key_hash = { self.class.hash_key => @attributes[self.class.hash_key] }
+      key_hash = {self.class.hash_key => @attributes[self.class.hash_key]}
       key_hash[self.class.range_key] = @attributes[self.class.range_key] if self.class.range_key
       key_hash
     end
 
     def self.create_key_hash(hash_value, range_value = nil)
-      key_hash = { self.hash_key => hash_value }
+      key_hash = {self.hash_key => hash_value}
       key_hash[self.range_key] = range_value if self.range_key
       key_hash
     end

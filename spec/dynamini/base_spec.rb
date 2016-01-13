@@ -19,6 +19,12 @@ describe Dynamini::Base do
     handle :bar, :integer
   end
 
+  class TestClassWithCallbacks < Dynamini::Base
+    self.in_memory = true
+    before_save :before_callback
+    after_save :after_callback
+  end
+
   before do
     model.save
   end
@@ -62,6 +68,7 @@ describe Dynamini::Base do
 
       context 'when creating a subclass' do
         class Foo < Dynamini::Base
+          Foo.in_memory = true
         end
 
         it 'should return the object as an instance of the subclass' do
@@ -145,6 +152,11 @@ describe Dynamini::Base do
     end
 
     describe '#save' do
+      it 'should run before and after save callbacks' do
+        expect_any_instance_of(TestClassWithCallbacks).to receive(:before_callback)
+        expect_any_instance_of(TestClassWithCallbacks).to receive(:after_callback)
+        TestClassWithCallbacks.new.save
+      end
 
       context 'when passing validation' do
         it 'should return true' do
@@ -263,6 +275,12 @@ describe Dynamini::Base do
   end
 
   describe '#save!' do
+
+    it 'should run before and after save callbacks' do
+      expect_any_instance_of(TestClassWithCallbacks).to receive(:before_callback)
+      expect_any_instance_of(TestClassWithCallbacks).to receive(:after_callback)
+      TestClassWithCallbacks.new.save!
+    end
 
     context 'hash key only' do
       class TestValidation < Dynamini::Base

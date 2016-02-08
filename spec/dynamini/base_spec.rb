@@ -15,12 +15,10 @@ describe Dynamini::Base do
   class TestClassWithRange < Dynamini::Base
     set_hash_key :foo
     set_range_key :bar
-    self.in_memory = true
     handle :bar, :integer
   end
 
   class TestClassWithCallbacks < Dynamini::Base
-    self.in_memory = true
     before_save :before_callback
     after_save :after_callback
   end
@@ -68,7 +66,6 @@ describe Dynamini::Base do
 
       context 'when creating a subclass' do
         class Foo < Dynamini::Base
-          Foo.in_memory = true
         end
 
         it 'should return the object as an instance of the subclass' do
@@ -286,7 +283,6 @@ describe Dynamini::Base do
       class TestValidation < Dynamini::Base
         set_hash_key :bar
         validates_presence_of :foo
-        self.in_memory = true
       end
 
       it 'should raise its failed validation errors' do
@@ -317,8 +313,6 @@ describe Dynamini::Base do
       set_hash_key :bar
       set_range_key :abc
     end
-
-    TestHashRangeTable.in_memory = true
 
     let(:time) { Time.now }
     before do
@@ -473,7 +467,6 @@ describe Dynamini::Base do
         before do
           class TestClass < Dynamini::Base
             set_hash_key :foo
-            self.in_memory = true
           end
         end
 

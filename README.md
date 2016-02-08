@@ -177,9 +177,9 @@ Vehicle.find('H3LLO').stuff
 ## Testing
 There's a test client included with this gem, meaning you don't have to connect to a real Dynamo instance when testing.
 You could also use this in development if you dont have a real Dynamo instance yet, but the data saved to it won't persist through a server restart.
-To activate this feature, just call:
+To activate this feature, just do:
 ```ruby
-Vehicle.in_memory = true
+require 'dynamini/testing'
 ```
 After which any internal API calls will be replaced with calls to Dynamini::TestClient.
 
@@ -190,9 +190,8 @@ Vehicle.client.reset
 
 So, for instance, to get Rspec working with your test suite the way your ActiveRecord model behaved, add these lines to your spec_helper.rb:
 ```ruby
-config.before(:all) {
-  Vehicle.in_memory = true
-}
+require 'dynamini/testing'
+
 config.after(:each) {
   Vehicle.client.reset # Large test suites will be very slow and unpredictable otherwise!
 }

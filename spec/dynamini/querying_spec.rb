@@ -16,7 +16,6 @@ describe Dynamini::Querying do
   class TestClassWithRange < Dynamini::Base
     set_hash_key :foo
     set_range_key :bar
-    self.in_memory = true
     handle :bar, :integer
   end
 
@@ -42,7 +41,6 @@ describe Dynamini::Querying do
 
     context 'when retrieving a subclass' do
       class Foo < Dynamini::Base
-        self.in_memory = true
       end
 
       it 'should return the object as an instance of the subclass' do
@@ -94,7 +92,6 @@ describe Dynamini::Querying do
     context 'a non-numeric range field' do
       it 'should raise an error' do
         class TestClassWithStringRange < Dynamini::Base
-          self.in_memory = true
           set_hash_key :group
           set_range_key :user_name
         end

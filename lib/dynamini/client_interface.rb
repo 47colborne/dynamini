@@ -1,23 +1,12 @@
 module Dynamini
   module ClientInterface
     module ClassMethods
-
-      attr_writer :in_memory
-
       def client
-        if in_memory
-          @client ||= Dynamini::TestClient.new(hash_key, range_key)
-        else
           @client ||= Aws::DynamoDB::Client.new(
               region: Dynamini.configuration.region,
               access_key_id: Dynamini.configuration.access_key_id,
               secret_access_key: Dynamini.configuration.secret_access_key
           )
-        end
-      end
-
-      def in_memory
-        @in_memory || false
       end
     end
 

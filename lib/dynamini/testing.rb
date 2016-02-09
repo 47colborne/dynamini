@@ -1,3 +1,5 @@
+require 'dynamini'
+
 module Dynamini
   module ClientInterface
     module ClassMethods

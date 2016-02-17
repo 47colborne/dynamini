@@ -175,13 +175,13 @@ Vehicle.find('H3LLO').stuff
 ```
 
 ## Testing
-There's a test client included with this gem, meaning you don't have to connect to a real Dynamo instance when testing.
-You could also use this in development if you dont have a real Dynamo instance yet, but the data saved to it won't persist through a server restart.
-To activate this feature, just do:
+We've included an optional in-memory test client, so you don't necessarily have to connect to a real Dynamo instance when running tests. You could also use this in your development environment if you don't have a real Dynamo instance yet, but the data saved to it won't persist through a server restart.
+
+To activate this feature, just require the testing module:
 ```ruby
 require 'dynamini/testing'
 ```
-After which any internal API calls will be replaced with calls to Dynamini::TestClient.
+This module replaces all API calls Dynamini makes to AWS DynamoDB with calls to Dynamini::TestClient.
 
 The test client will not reset its database unless you tell it to, like so:
 ```ruby
@@ -204,9 +204,6 @@ config.after(:each) {
 * If you change the primary key value on an instance of your model, then resave it, you'll have two copies in your database.
 * If you use non-numeric strings for your primary key, remember to change your foreign key columns on related objects to be string type.
 * You might want to conditionally set the table name for your model based on the Rails.env, enabling separate tables for development and production.
-
-## Coming Soon
-* Conditional updates ( http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.SpecifyingConditions.html )
 
 ## Contributing
 

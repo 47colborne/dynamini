@@ -1,5 +1,6 @@
 module Dynamini
   module Querying
+    OPTIONAL_QUERY_PARAMS = [:limit, :scan_index_forward]
 
     def find(hash_value, range_value = nil)
       fail 'Range key cannot be blank.' if range_key && range_value.nil?
@@ -51,11 +52,13 @@ module Dynamini
       expression_attribute_values = build_expression_attribute_values(args)
       key_condition_expression = build_key_condition_expression(args)
 
-      client.query(
-          table_name: table_name,
-          key_condition_expression: key_condition_expression,
-          expression_attribute_values: expression_attribute_values
-      )
+      client.query(set_extra_parameters(
+                     {
+                       table_name: table_name,
+                       key_condition_expression: key_condition_expression,
+                       expression_attribute_values: expression_attribute_values
+                     },
+                     args))
     end
 
     def build_expression_attribute_values(args)
@@ -76,6 +79,11 @@ module Dynamini
         expression += " AND #{range_key} <= :e"
       end
       expression
+    end
+
+    def set_extra_parameters(hash, args)
+      extras = args.select { |k, v| OPTIONAL_QUERY_PARAMS.include? k }
+      hash.merge!(extras)
     end
 
     def validate_query_values(hash_value, range_value)

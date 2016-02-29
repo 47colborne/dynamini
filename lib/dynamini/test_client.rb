@@ -124,6 +124,8 @@ module Dynamini
       selected = parent.values
       selected = selected.select{ |item| item[@range_key_attr] >= start_val.to_f } if start_val
       selected = selected.select{ |item| item[@range_key_attr] <= end_val.to_f } if end_val
+      selected = selected.sort! { |a,b| b[@range_key_attr] <=> a[@range_key_attr] } if args[:scan_index_forward] == false
+      selected = selected[0...args[:limit]] if args[:limit]
 
       OpenStruct.new(items: selected)
     end

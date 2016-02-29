@@ -4,10 +4,10 @@ describe Dynamini::Querying do
 
   let(:model_attributes) {
     {
-        name: 'Widget',
-        price: 9.99,
-        id: 'abcd1234',
-        hash_key: '009'
+      name: 'Widget',
+      price: 9.99,
+      id: 'abcd1234',
+      hash_key: '009'
     }
   }
 
@@ -102,6 +102,31 @@ describe Dynamini::Querying do
     context 'hash key does not exist' do
       it 'should return an empty array' do
         expect(TestClassWithRange.query(hash_key: 'non-existent key')).to eq([])
+      end
+    end
+
+    context 'when :limit is provided' do
+      it 'should return only the first two records' do
+        records = TestClassWithRange.query(hash_key: 'foo', limit: 2)
+        expect(records.length).to eq 2
+        expect(records.first.bar).to eq 1
+        expect(records.last.bar).to eq 2
+      end
+    end
+
+    context 'when :scan_index_forward is provided' do
+      it 'should return records in order when given true' do
+        records = TestClassWithRange.query(hash_key: 'foo', scan_index_forward: true)
+        expect(records.length).to eq 4
+        expect(records.first.bar).to eq 1
+        expect(records.last.bar).to eq 4
+      end
+
+      it 'should return records in reverse order when given false' do
+        records = TestClassWithRange.query(hash_key: 'foo', scan_index_forward: false)
+        expect(records.length).to eq 4
+        expect(records.first.bar).to eq 4
+        expect(records.last.bar).to eq 1
       end
     end
   end

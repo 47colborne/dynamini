@@ -105,7 +105,14 @@ The magic fields updated_at and created_at are handled as :time by default.
 
 Dynamini includes a query function that's much more narrow than ActiveRecord's where function. It's designed to retrieve a selection of records that belong to a given hash key but have various range key values. To use .query, your table needs to be configured with a range key, and you need to :handle that range field as a fundamentally numeric type - integer, float, date, or time. If your range key field isn't numeric, you won't be able to .query, but you'll still be able to .find your records normally.
 
-Query takes three arguments; a mandatory :hash_key, an optional :start, and an optional :end. Here's how you'd use it to find daily temperature data for a given city, selecting for specific date ranges:
+Query takes the following arguments:
+* :hash_key (required)
+* :start (optional)
+* :end (optional)
+* :limit (optional)
+* :scan_index_forward (optional - set to false to sort by range key in desc order)
+
+Here's how you'd use it to find daily temperature data for a given city, selecting for specific date ranges:
 
 ```ruby
 class DailyWeather < Dynamini::Base
@@ -138,6 +145,12 @@ DailyWeather.query(hash_key: "Toronto", end: Date.new(2015,10,08))
 
 DailyWeather.query(hash_key: "Toronto", start: Date.new(2015,10,08), end: Date.new(2015,10,09))
 > [A, B]
+
+DailyWeather.query(hash_key: "Toronto", limit: 2)
+> [A, B]
+
+DailyWeather.query(hash_key: "Toronto", scan_index_forward: false)
+> [C, B, A]
 ```
 
 ## Array Support

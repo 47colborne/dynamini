@@ -106,6 +106,23 @@ describe Dynamini::TestClient do
         test_client.update_item(table_name: table_name, key: {hash_key_field: 'foo', range_key_field: i + 1}, attribute_updates: {abc: {value: 'abc', action: 'PUT'}})
       end
     end
+
+    context 'on table with integer hash_key' do
+      it 'should return items correctly' do
+        test_client.update_item(table_name: 'integer_table', key: {hash_key_field: 1, range_key_field: 1}, attribute_updates: {abc: {value: 'abc', action: 'PUT'}})
+        response = test_client.query(
+          table_name: 'integer_table',
+          key_condition_expression: "hash_key_field = :h",
+          expression_attribute_values: {
+            ":h" => 1
+          }
+        )
+        expect(response.items.length).to eq(1)
+        expect(response.items.first[:range_key_field]).to eq(1)
+        expect(response.items.first[:hash_key_field]).to eq(1)
+      end
+    end
+
     context 'with LE operator' do
       it 'should return all items with range key less than or equal to the provided value' do
         response = test_client.query(

@@ -103,7 +103,7 @@ module Dynamini
       end
 
       tokens = args[:key_condition_expression].split(/\s+/)
-      hash_key = tokens[2]
+      hash_key = args[:expression_attribute_values][":h"].is_a?(Integer) ? tokens[2].to_i : tokens[2]
       case tokens[5]
         when ">="
           start_val = tokens[6]

@@ -4,7 +4,7 @@ module Dynamini
   # In-memory database client for test purposes.
   class TestClient
 
-    attr_reader :hash_key_attr, :data, :range_key_attr
+    attr_reader :hash_key_attr, :data, :range_key_attr, :secondary_index_attr
 
     def initialize(hash_key_attr, range_key_attr = nil)
       @data = {}
@@ -28,26 +28,33 @@ module Dynamini
           hash_key_attr => hash_key_value
       )
 
-      if hash_key_value
-        if range_key_value
-          updates.merge!(range_key_attr => range_key_value)
-          if table[hash_key_value] && table[hash_key_value][range_key_value]
-            table[hash_key_value][range_key_value].merge! updates
-          else
-            table[hash_key_value] ||= {}
-            table[hash_key_value][range_key_value] = updates
-          end
-
-        else
-          if table[hash_key_value]
-            table[hash_key_value].merge!(updates)
-          else
-            table[hash_key_value] = updates
-          end
-        end
-      end
+      primary_index_insertion(hash_key_value, range_key_value, updates, table) if hash_key_value
 
     end
+
+    def primary_index_insertion(hash_key_value, range_key_value, updates, table)
+      if range_key_value
+        primary_with_range_insertion(hash_key_value, range_key_value, updates, table)
+      else
+        primary_only_hash_insertion(hash_key_value, updates, table)
+      end
+    end
+
+    def primary_with_range_insertion(hash_key_value, range_key_value, updates, table)
+      updates.merge!(range_key_attr => range_key_value)
+      if table[hash_key_value] && table[hash_key_value][range_key_value]
+        table[hash_key_value][range_key_value].merge! updates
+      else
+        table[hash_key_value] ||= {}
+        table[hash_key_value][range_key_value] = updates
+      end
+    end
+
+    def primary_only_hash_insertion(hash_key_value, updates, table)
+      table[hash_key_value] ? table[hash_key_value].merge!(updates) : table[hash_key_value] = updates
+    end
+
+
 
     def get_item(args = {})
       table = get_table(args[:table_name])

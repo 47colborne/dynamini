@@ -1,6 +1,6 @@
 module Dynamini
   module Querying
-    OPTIONAL_QUERY_PARAMS = [:limit, :scan_index_forward]
+    OPTIONAL_QUERY_PARAMS = [:limit, :scan_index_forward, :index_name]
 
     def find(hash_value, range_value = nil)
       fail 'Range key cannot be blank.' if range_key && range_value.nil?
@@ -51,14 +51,14 @@ module Dynamini
     def dynamo_query(args)
       expression_attribute_values = build_expression_attribute_values(args)
       key_condition_expression = build_key_condition_expression(args)
-
-      client.query(set_extra_parameters(
-                     {
-                       table_name: table_name,
-                       key_condition_expression: key_condition_expression,
-                       expression_attribute_values: expression_attribute_values
-                     },
-                     args))
+      query = set_extra_parameters(
+          {
+              table_name: table_name,
+          key_condition_expression: key_condition_expression,
+          expression_attribute_values: expression_attribute_values
+      },
+          args)
+      client.query(query)
     end
 
     def build_expression_attribute_values(args)
@@ -70,15 +70,23 @@ module Dynamini
     end
 
     def build_key_condition_expression(args)
-      expression = "#{hash_key} = :h"
+      expression = "#{current_index_hash_key(args)} = :h"
       if args[:start] && args[:end]
-        expression += " AND #{range_key} BETWEEN :s AND :e"
+        expression += " AND #{current_index_range_key(args)} BETWEEN :s AND :e"
       elsif args[:start]
-        expression += " AND #{range_key} >= :s"
+        expression += " AND #{current_index_range_key(args)} >= :s"
       elsif args[:end]
-        expression += " AND #{range_key} <= :e"
+        expression += " AND #{current_index_range_key(args)} <= :e"
       end
       expression
+    end
+
+    def current_index_hash_key(args)
+      args[:index_name] ? secondary_index[args[:index_name]][:hash_key_name] : hash_key
+    end
+
+    def current_index_range_key(args)
+      args[:index_name] ? secondary_index[args[:index_name]][:range_key_name] : range_key
     end
 
     def set_extra_parameters(hash, args)

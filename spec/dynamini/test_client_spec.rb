@@ -99,11 +99,11 @@ describe Dynamini::TestClient do
 
   describe '#query' do
 
-    let(:test_client) { Dynamini::TestClient.new(:hash_key_field, :range_key_field) }
+    let(:test_client) { Dynamini::TestClient.new(:hash_key_field, :range_key_field, {secondary_index: {hash_key_name: 'abc', range_key_name: :secondary_range_key }})}
 
     before do
       4.times do |i|
-        test_client.update_item(table_name: table_name, key: {hash_key_field: 'foo', range_key_field: i + 1}, attribute_updates: {abc: {value: 'abc', action: 'PUT'}})
+        test_client.update_item(table_name: table_name, key: {hash_key_field: 'foo', range_key_field: i + 1}, attribute_updates: {'abc' => {value: 'abc', action: 'PUT'}, 'secondary_range_key' => {value: 10 - i, action: 'PUT'}})
       end
     end
 
@@ -126,63 +126,146 @@ describe Dynamini::TestClient do
     context 'with LE operator' do
       it 'should return all items with range key less than or equal to the provided value' do
         response = test_client.query(
-            table_name: table_name,
-            key_condition_expression: "hash_key_field = :h AND user_id <= :e",
-            expression_attribute_values: {
-                ":h" => 'foo',
-                ":e" => 2
-            }
+          table_name: table_name,
+          key_condition_expression: "hash_key_field = :h AND user_id <= :e",
+          expression_attribute_values: {
+            ":h" => 'foo',
+            ":e" => 2
+          }
         )
         expect(response.items.length).to eq(2)
         expect(response.items.first[:range_key_field]).to eq(1)
         expect(response.items.last[:range_key_field]).to eq(2)
       end
     end
+
     context 'with GE operator' do
       it 'should return all items with range key greater than or equal to the provided value' do
         response = test_client.query(
-            table_name: table_name,
-            key_condition_expression: "hash_key_field = :h AND user_id >= :s",
-            expression_attribute_values: {
-                ":h" => 'foo',
-                ":s" => 2
-            }
+          table_name: table_name,
+          key_condition_expression: "hash_key_field = :h AND user_id >= :s",
+          expression_attribute_values: {
+            ":h" => 'foo',
+            ":s" => 2
+          }
         )
         expect(response.items.length).to eq(3)
         expect(response.items.first[:range_key_field]).to eq(2)
         expect(response.items.last[:range_key_field]).to eq(4)
       end
     end
+
     context 'with BETWEEN operator' do
       it 'should return all items with range key between the provided values' do
         response = test_client.query(
-            table_name: table_name,
-            key_condition_expression: "hash_key_field = :h AND user_id BETWEEN :s AND :e",
-            expression_attribute_values: {
-                ":h" => 'foo',
-                ":s" => 2,
-                ":e" => 3
-            }
+          table_name: table_name,
+          key_condition_expression: "hash_key_field = :h AND user_id BETWEEN :s AND :e",
+          expression_attribute_values: {
+            ":h" => 'foo',
+            ":s" => 2,
+            ":e" => 3
+          }
         )
         expect(response.items.length).to eq(2)
         expect(response.items.first[:range_key_field]).to eq(2)
         expect(response.items.last[:range_key_field]).to eq(3)
       end
     end
+
     context 'with no operator' do
       it 'should return all items with range key between the provided values' do
         response = test_client.query(
-            table_name: table_name,
-            key_condition_expression: "hash_key_field = :h",
-            expression_attribute_values: {
-                ":h" => 'foo'
-            }
+          table_name: table_name,
+          key_condition_expression: "hash_key_field = :h",
+          expression_attribute_values: {
+            ":h" => 'foo'
+          }
         )
         expect(response.items.length).to eq(4)
         expect(response.items.first[:range_key_field]).to eq(1)
         expect(response.items.last[:range_key_field]).to eq(4)
       end
     end
+
+    context 'with secondary index' do
+      before do
+        test_client.update_item(table_name: table_name,
+            key: {hash_key_field: 'bar', range_key_field: 10},
+            attribute_updates: {'abc' => {value: 'abc', action: 'PUT'},
+            'secondary_range_key' => {value: 11, action: 'PUT'}})
+      end
+
+      context 'with LE operator' do
+        it 'should return all items with secondary range key less than or equal to the provided value' do
+          response = test_client.query(
+              table_name: table_name,
+              key_condition_expression: "abc = :h AND secondary_range_key <= :e",
+              expression_attribute_values: {
+                ":h" => 'abc',
+                ":e" => 8
+              },
+              index_name: :secondary_index
+          )
+          expect(response.items.length).to eq(2)
+          expect(response.items.first['secondary_range_key']).to eq(7)
+          expect(response.items.last['secondary_range_key']).to eq(8)
+        end
+      end
+
+      context 'with GE operator' do
+        it 'should return all items with secondary range key greater than or equal to the provided value' do
+          response = test_client.query(
+              table_name: table_name,
+              key_condition_expression: "abc = :h AND secondary_range_key >= :s",
+              expression_attribute_values: {
+                ":h" => 'abc',
+                ":s" => 8
+              },
+              index_name: :secondary_index
+          )
+          expect(response.items.length).to eq(4)
+          expect(response.items.first['secondary_range_key']).to eq(8)
+          expect(response.items.last['secondary_range_key']).to eq(11)
+        end
+      end
+
+      context 'with BETWEEN operator' do
+        it 'should return all items with secondary range key between the provided values' do
+          response = test_client.query(
+              table_name: table_name,
+              key_condition_expression: "abc = :h AND secondary_range_key BETWEEN :s AND :e",
+              expression_attribute_values: {
+                ":h" => 'abc',
+                ":s" => 8,
+                ":e" => 9
+              },
+              index_name: :secondary_index
+          )
+          expect(response.items.length).to eq(2)
+          expect(response.items.first['secondary_range_key']).to eq(8)
+          expect(response.items.last['secondary_range_key']).to eq(9)
+        end
+      end
+
+      context 'with no opertator' do
+        it 'should return all items sorted by their secondary index' do
+          response = test_client.query(
+              table_name: table_name,
+              key_condition_expression: "abc = :h",
+              expression_attribute_values: {
+                ":h" => 'abc'
+              },
+              index_name: :secondary_index
+          )
+
+          expect(response.items.length).to eq(5)
+          expect(response.items.first['secondary_range_key']).to eq(7)
+          expect(response.items.last['secondary_range_key']).to eq(11)
+        end
+      end
+
+    end
+
   end
 
   describe '#batch_write_item' do

@@ -4,12 +4,13 @@ module Dynamini
   # In-memory database client for test purposes.
   class TestClient
 
-    attr_reader :hash_key_attr, :data, :range_key_attr, :secondary_index_attr
+    attr_reader :hash_key_attr, :data, :range_key_attr, :secondary_index
 
-    def initialize(hash_key_attr, range_key_attr = nil)
+    def initialize(hash_key_attr, range_key_attr = nil, secondary_index=nil)
       @data = {}
       @hash_key_attr = hash_key_attr
       @range_key_attr = range_key_attr
+      @secondary_index = secondary_index
     end
 
     def get_table(table_name)
@@ -110,31 +111,68 @@ module Dynamini
       end
 
       tokens = args[:key_condition_expression].split(/\s+/)
-      hash_key = args[:expression_attribute_values][":h"].is_a?(Integer) ? tokens[2].to_i : tokens[2]
-      case tokens[5]
-        when ">="
-          start_val = tokens[6]
-          end_val = nil
-        when "<="
-          start_val = nil
-          end_val = tokens[6]
-        when "BETWEEN"
-          start_val = tokens[6]
-          end_val = tokens[8]
-        else
-          start_val = nil
-          end_val = nil
+      start_val, end_val = range_key_limits(tokens)
+
+      if args[:index_name]
+        secondary_index_query(args)
+      else
+        hash_key = hash_key_value(args).is_a?(Integer) ? tokens[2].to_i : tokens[2]
+
+        parent = get_table(args[:table_name])[hash_key]
+        return OpenStruct.new(items: []) unless parent
+        selected = apply_filter_options(parent, args, start_val, end_val)
+
+        OpenStruct.new(items: selected)
       end
-      parent = get_table(args[:table_name])[hash_key]
-      return OpenStruct.new(items:[]) unless parent
+    end
 
-      selected = parent.values
-      selected = selected.select{ |item| item[@range_key_attr] >= start_val.to_f } if start_val
-      selected = selected.select{ |item| item[@range_key_attr] <= end_val.to_f } if end_val
-      selected = selected.sort! { |a,b| b[@range_key_attr] <=> a[@range_key_attr] } if args[:scan_index_forward] == false
-      selected = selected[0...args[:limit]] if args[:limit]
+    def range_key_limits(tokens)
+      case tokens[5]
+        when ">=" then [tokens[6], nil]
+        when "<=" then [nil, tokens[6]]
+        when "BETWEEN" then [tokens[6], tokens[8]]
+        else [nil, nil]
+      end
+    end
 
+    def apply_filter_options(parent, args, start_val, end_val)
+      records = parent.values
+      records = records.select { |record| record[@range_key_attr] >= start_val.to_f } if start_val
+      records = records.select { |record| record[@range_key_attr] <= end_val.to_f } if end_val
+      records = records.sort! { |a, b| b[@range_key_attr] <=> a[@range_key_attr] } if args[:scan_index_forward] == false
+      records = records[0...args[:limit]] if args[:limit]
+      records
+    end
+
+
+    def secondary_index_query(args = {})
+      index = secondary_index[args[:index_name]]
+      table = get_table(args[:table_name])
+
+      tokens = args[:key_condition_expression].split(/\s+/)
+      start_val, end_val = range_key_limits(tokens)
+
+      records = @range_key_attr ? get_values(table) : table.values
+      selected = sort_records(records, index, args, start_val, end_val)
       OpenStruct.new(items: selected)
+    end
+
+    def sort_records(records, index, args, start_val, end_val)
+      records = records.select { |record| record[get_secondary_hash_key(index)] == hash_key_value(args) }
+      records = records.select { |record| record[get_secondary_range_key(index)] >= start_val.to_f } if start_val
+      records = records.select { |record| record[get_secondary_range_key(index)] <= end_val.to_f } if end_val
+      records = records.sort { |a, b| a[get_secondary_range_key(index)] <=> b[get_secondary_range_key(index)] }
+      records = records.reverse if args[:scan_index_forward] == false
+      records = records[0...args[:limit]] if args[:limit]
+      records
+    end
+
+    def get_secondary_hash_key(index)
+      index[:hash_key_name] == @hash_key_attr ? index[:hash_key_name] : index[:hash_key_name].to_s
+    end
+
+    def get_secondary_range_key(index)
+      index[:range_key_name] == @range_key_attr ? index[:range_key_name] : index[:range_key_name].to_s
     end
 
     def reset
@@ -142,6 +180,15 @@ module Dynamini
     end
 
     private
+
+    def hash_key_value(args)
+      args[:expression_attribute_values][":h"]
+    end
+
+    def get_values(table, records=[])
+      table.values.each { |value| records += value.values }
+      records
+    end
 
     def flatten_attribute_updates(args = {})
       attribute_hash = {}

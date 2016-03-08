@@ -16,7 +16,9 @@ describe Dynamini::Querying do
   class TestClassWithRange < Dynamini::Base
     set_hash_key :foo
     set_range_key :bar
+    set_secondary_index :secondary_index, hash_key: :secondary_hash_key, range_key: :secondary_range_key
     handle :bar, :integer
+    handle :secondary_range_key, :integer
   end
 
   describe '.find' do
@@ -53,8 +55,10 @@ describe Dynamini::Querying do
   describe '.query' do
     before do
       4.times do |i|
-        TestClassWithRange.create(foo: 'foo', bar: i + 1)
+        TestClassWithRange.create(foo: 'foo', bar: i + 1, secondary_hash_key: 'secondary_hash_key', secondary_range_key: 10 - i)
       end
+      TestClassWithRange.create(foo: 'foo2', bar: 5, secondary_hash_key: 'secondary_hash_key', secondary_range_key: 6)
+
     end
     context 'start value provided' do
       it 'should return records with a range key greater than or equal to the start value' do
@@ -128,6 +132,55 @@ describe Dynamini::Querying do
         expect(records.first.bar).to eq 4
         expect(records.last.bar).to eq 1
       end
+    end
+
+    context 'using secondary index' do
+      it 'should be able to query using the secondary index' do
+        records = TestClassWithRange.query(hash_key: 'secondary_hash_key', index_name: :secondary_index)
+        expect(records.length).to eq(5)
+        expect(records.first.secondary_range_key).to eq(6)
+        expect(records.last.secondary_range_key).to eq(10)
+      end
+
+      it 'should be able to sort backwards' do
+        records = TestClassWithRange.query(hash_key: 'secondary_hash_key', index_name: :secondary_index, scan_index_forward: false)
+        expect(records.length).to eq(5)
+        expect(records.first.secondary_range_key).to eq(10)
+        expect(records.last.secondary_range_key).to eq(6)
+      end
+
+      it 'should be able to limit number of results' do
+        records = TestClassWithRange.query(hash_key: 'secondary_hash_key', index_name: :secondary_index, limit: 3)
+        expect(records.length).to eq(3)
+        expect(records.first.secondary_range_key).to eq(6)
+        expect(records.last.secondary_range_key).to eq(8)
+      end
+
+      it 'should be able to give a minimum value for the range key' do
+        records = TestClassWithRange.query(hash_key: 'secondary_hash_key', index_name: :secondary_index, start: 8)
+        expect(records.length).to eq(3)
+        expect(records.first.secondary_range_key).to eq(8)
+        expect(records.last.secondary_range_key).to eq(10)
+      end
+
+      it 'should be able to give a maximum for the range key' do
+        records = TestClassWithRange.query(hash_key: 'secondary_hash_key', index_name: :secondary_index, end: 8)
+        expect(records.length).to eq(3)
+        expect(records.first.secondary_range_key).to eq(6)
+        expect(records.last.secondary_range_key).to eq(8)
+      end
+
+      it 'should be able to give a maximum for the range key' do
+        records = TestClassWithRange.query(hash_key: 'secondary_hash_key', index_name: :secondary_index, start: 7, end: 9)
+        expect(records.length).to eq(3)
+        expect(records.first.secondary_range_key).to eq(7)
+        expect(records.last.secondary_range_key).to eq(9)
+      end
+
+      it 'should return no results if none are found with the secondary index' do
+        expect(TestClassWithRange.query(hash_key: 'non-existent key', index_name: :secondary_index)).to eq([])
+      end
+
     end
   end
 

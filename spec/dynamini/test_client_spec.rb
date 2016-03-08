@@ -99,7 +99,7 @@ describe Dynamini::TestClient do
 
   describe '#query' do
 
-    let(:test_client) { Dynamini::TestClient.new(:hash_key_field, :range_key_field, {secondary_index: {hash_key_name: 'abc', range_key_name: :secondary_range_key }})}
+    let(:test_client) { Dynamini::TestClient.new(:hash_key_field, :range_key_field, {'secondary_index' => {hash_key_name: 'abc', range_key_name: :secondary_range_key }})}
 
     before do
       4.times do |i|
@@ -204,7 +204,7 @@ describe Dynamini::TestClient do
                 ":h" => 'abc',
                 ":e" => 8
               },
-              index_name: :secondary_index
+              index_name: 'secondary_index'
           )
           expect(response.items.length).to eq(2)
           expect(response.items.first['secondary_range_key']).to eq(7)
@@ -221,7 +221,7 @@ describe Dynamini::TestClient do
                 ":h" => 'abc',
                 ":s" => 8
               },
-              index_name: :secondary_index
+              index_name: 'secondary_index'
           )
           expect(response.items.length).to eq(4)
           expect(response.items.first['secondary_range_key']).to eq(8)
@@ -239,7 +239,7 @@ describe Dynamini::TestClient do
                 ":s" => 8,
                 ":e" => 9
               },
-              index_name: :secondary_index
+              index_name: 'secondary_index'
           )
           expect(response.items.length).to eq(2)
           expect(response.items.first['secondary_range_key']).to eq(8)
@@ -247,7 +247,7 @@ describe Dynamini::TestClient do
         end
       end
 
-      context 'with no opertator' do
+      context 'with no operator' do
         it 'should return all items sorted by their secondary index' do
           response = test_client.query(
               table_name: table_name,
@@ -255,7 +255,7 @@ describe Dynamini::TestClient do
               expression_attribute_values: {
                 ":h" => 'abc'
               },
-              index_name: :secondary_index
+              index_name: 'secondary_index'
           )
 
           expect(response.items.length).to eq(5)

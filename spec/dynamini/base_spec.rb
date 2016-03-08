@@ -483,30 +483,24 @@ describe Dynamini::Base do
     end
 
     describe '#set_secondary_index' do
-      before do
+      it 'should return an hash containing only the hash_key and range_key name and value when setting a global secondary index' do
         class TestClass < Dynamini::Base
           set_hash_key :foo
           set_range_key :bar
           set_secondary_index :git_baz, hash_key: :git, range_key: :baz
         end
+
+        expect(TestClass.secondary_index['git_baz']).to eq(hash_key_name: :git, range_key_name: :baz)
       end
 
-      it 'should return an hash containing only the hash_key and range_key name and value' do
-        expect(TestClass.secondary_index[:git_baz]).to eq(hash_key_name: :git, range_key_name: :baz)
-      end
-    end
-
-    describe '#set_local_secondary_index' do
-      before do
+      it 'should return an hash containing only the hash_key and range_key name and value when setting a local secondary index' do
         class TestClass < Dynamini::Base
           set_hash_key :foo
           set_range_key :bar
           set_secondary_index :foo_baz, range_key: :baz
         end
-      end
 
-      it 'should return an hash containing only the hash_key and range_key name and value' do
-        expect(TestClass.secondary_index[:foo_baz]).to eq(hash_key_name: :foo, range_key_name: :baz)
+        expect(TestClass.secondary_index['foo_baz']).to eq(hash_key_name: :foo, range_key_name: :baz)
       end
     end
   end

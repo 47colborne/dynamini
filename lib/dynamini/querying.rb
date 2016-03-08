@@ -1,6 +1,6 @@
 module Dynamini
   module Querying
-    OPTIONAL_QUERY_PARAMS = [:limit, :scan_index_forward, :index_name]
+    OPTIONAL_QUERY_PARAMS = [:limit, :scan_index_forward]
 
     def find(hash_value, range_value = nil)
       fail 'Range key cannot be blank.' if range_key && range_value.nil?
@@ -82,15 +82,16 @@ module Dynamini
     end
 
     def current_index_hash_key(args)
-      args[:index_name] ? secondary_index[args[:index_name]][:hash_key_name] : hash_key
+      args[:index_name] ? secondary_index[args[:index_name].to_s][:hash_key_name] : hash_key
     end
 
     def current_index_range_key(args)
-      args[:index_name] ? secondary_index[args[:index_name]][:range_key_name] : range_key
+      args[:index_name] ? secondary_index[args[:index_name].to_s][:range_key_name] : range_key
     end
 
     def set_extra_parameters(hash, args)
       extras = args.select { |k, v| OPTIONAL_QUERY_PARAMS.include? k }
+      extras[:index_name] = args[:index_name].to_s if args[:index_name]
       hash.merge!(extras)
     end
 

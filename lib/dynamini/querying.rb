@@ -51,10 +51,12 @@ module Dynamini
     def dynamo_query(args)
       expression_attribute_values = build_expression_attribute_values(args)
       key_condition_expression = build_key_condition_expression(args)
+      expression_attribute_names = build_expression_attribute_names(args)
       query = set_extra_parameters(
           {
-              table_name: table_name,
+          table_name: table_name,
           key_condition_expression: key_condition_expression,
+          expression_attribute_names: expression_attribute_names,
           expression_attribute_values: expression_attribute_values
       },
           args)
@@ -69,14 +71,21 @@ module Dynamini
       expression_values
     end
 
+    def build_expression_attribute_names(args)
+      expression_values = {}
+      expression_values['#H'] = current_index_hash_key(args)
+      expression_values['#R'] = current_index_range_key(args) if args[:end] || args[:start]
+      expression_values
+    end
+
     def build_key_condition_expression(args)
-      expression = "#{current_index_hash_key(args)} = :h"
+      expression = "#H = :h"
       if args[:start] && args[:end]
-        expression += " AND #{current_index_range_key(args)} BETWEEN :s AND :e"
+        expression += " AND #R BETWEEN :s AND :e"
       elsif args[:start]
-        expression += " AND #{current_index_range_key(args)} >= :s"
+        expression += " AND #R >= :s"
       elsif args[:end]
-        expression += " AND #{current_index_range_key(args)} <= :e"
+        expression += " AND #R <= :e"
       end
       expression
     end

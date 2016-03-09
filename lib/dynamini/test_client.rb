@@ -106,15 +106,18 @@ module Dynamini
       # "foo = val AND bar >= val2"
       # "foo = val AND bar BETWEEN val2 AND val3"
 
-      args[:expression_attribute_values].each do |symbol, value|
-        args[:key_condition_expression].gsub!(symbol, value.to_s)
-      end
+      attr_placeholders = args[:expression_attribute_values].merge(args[:expression_attribute_names])
+      attr_placeholders.each { |symbol, value| args[:key_condition_expression].gsub!(symbol, value.to_s) }
 
       tokens = args[:key_condition_expression].split(/\s+/)
+
+      hash_key_name, range_key_name = determine_hash_and_range(args)
+
+      inspect_for_correct_keys?(tokens, hash_key_name, range_key_name)
       start_val, end_val = range_key_limits(tokens)
 
       if args[:index_name]
-        secondary_index_query(args)
+        secondary_index_query(args, start_val, end_val)
       else
         hash_key = hash_key_value(args).is_a?(Integer) ? tokens[2].to_i : tokens[2]
 
@@ -123,6 +126,15 @@ module Dynamini
         selected = apply_filter_options(parent, args, start_val, end_val)
 
         OpenStruct.new(items: selected)
+      end
+    end
+
+    def determine_hash_and_range(args)
+      if args[:index_name]
+        index = secondary_index[args[:index_name].to_s]
+        [index[:hash_key_name].to_s, index[:range_key_name].to_s]
+      else
+        [@hash_key_attr.to_s, @range_key_attr.to_s]
       end
     end
 
@@ -144,13 +156,9 @@ module Dynamini
       records
     end
 
-
-    def secondary_index_query(args = {})
-      index = secondary_index[args[:index_name]]
+    def secondary_index_query(args = {}, start_val = nil, end_val = nil)
+      index = secondary_index[args[:index_name].to_s]
       table = get_table(args[:table_name])
-
-      tokens = args[:key_condition_expression].split(/\s+/)
-      start_val, end_val = range_key_limits(tokens)
 
       records = @range_key_attr ? get_values(table) : table.values
       selected = sort_records(records, index, args, start_val, end_val)
@@ -213,6 +221,17 @@ module Dynamini
       end
 
       attribute_hash
+    end
+
+    def inspect_for_correct_keys?(tokens, hash_key_name, range_key_name)
+      missed_keys = []
+      missed_keys << hash_key_name unless tokens[0] == hash_key_name
+      missed_keys << range_key_name unless (tokens.length < 4 || tokens[4] == range_key_name)
+      raise missed_key_dynamodb_error(missed_keys) if missed_keys.length > 0
+    end
+
+    def missed_key_dynamodb_error(missed_keys)
+      Aws::DynamoDB::Errors::ValidationException.new(400,"Query condition missed key schema element: #{missed_keys.join(', ')}")
     end
   end
 end

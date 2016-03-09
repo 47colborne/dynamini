@@ -112,7 +112,8 @@ describe Dynamini::TestClient do
         test_client.update_item(table_name: 'integer_table', key: {hash_key_field: 1, range_key_field: 1}, attribute_updates: {abc: {value: 'abc', action: 'PUT'}})
         response = test_client.query(
           table_name: 'integer_table',
-          key_condition_expression: "hash_key_field = :h",
+          key_condition_expression: "#H = :h",
+          expression_attribute_names: {'#H' => 'hash_key_field'},
           expression_attribute_values: {
             ":h" => 1
           }
@@ -123,11 +124,12 @@ describe Dynamini::TestClient do
       end
     end
 
-    context 'with LE operator' do
+    context 'with LE operator' do # broken
       it 'should return all items with range key less than or equal to the provided value' do
         response = test_client.query(
           table_name: table_name,
-          key_condition_expression: "hash_key_field = :h AND user_id <= :e",
+          key_condition_expression: "#H = :h AND #R <= :e",
+          expression_attribute_names: {'#H' => 'hash_key_field', '#R' => 'range_key_field'},
           expression_attribute_values: {
             ":h" => 'foo',
             ":e" => 2
@@ -143,7 +145,8 @@ describe Dynamini::TestClient do
       it 'should return all items with range key greater than or equal to the provided value' do
         response = test_client.query(
           table_name: table_name,
-          key_condition_expression: "hash_key_field = :h AND user_id >= :s",
+          key_condition_expression: "#H = :h AND #R >= :s",
+          expression_attribute_names: {'#H' => 'hash_key_field', '#R' => 'range_key_field'},
           expression_attribute_values: {
             ":h" => 'foo',
             ":s" => 2
@@ -159,7 +162,8 @@ describe Dynamini::TestClient do
       it 'should return all items with range key between the provided values' do
         response = test_client.query(
           table_name: table_name,
-          key_condition_expression: "hash_key_field = :h AND user_id BETWEEN :s AND :e",
+          key_condition_expression: "#H = :h AND #R BETWEEN :s AND :e",
+          expression_attribute_names: {'#H' => 'hash_key_field', '#R' => 'range_key_field'},
           expression_attribute_values: {
             ":h" => 'foo',
             ":s" => 2,
@@ -176,7 +180,8 @@ describe Dynamini::TestClient do
       it 'should return all items with range key between the provided values' do
         response = test_client.query(
           table_name: table_name,
-          key_condition_expression: "hash_key_field = :h",
+          key_condition_expression: "#H = :h",
+          expression_attribute_names: {'#H' => 'hash_key_field'},
           expression_attribute_values: {
             ":h" => 'foo'
           }
@@ -184,6 +189,31 @@ describe Dynamini::TestClient do
         expect(response.items.length).to eq(4)
         expect(response.items.first[:range_key_field]).to eq(1)
         expect(response.items.last[:range_key_field]).to eq(4)
+      end
+    end
+
+    context 'with invalid expression_attribute_names' do
+      it 'should raise an error about an invalid hash_key' do
+        expect{ test_client.query(
+          table_name: table_name,
+          key_condition_expression: "#H = :h",
+          expression_attribute_names: {'#H' => 'not_hash_key_field'},
+          expression_attribute_values: {
+            ':h' => 'foo'
+          }
+        ) }.to raise_error(Aws::DynamoDB::Errors::ValidationException, "Query condition missed key schema element: hash_key_field")
+      end
+
+      it 'should raise an error about an invalid range_key' do
+        expect{ test_client.query(
+            table_name: table_name,
+            key_condition_expression: "#H = :h AND #R >= :s",
+            expression_attribute_names: {'#H' => 'not_hash_key_field', '#R' => 'not_range_key_field'},
+            expression_attribute_values: {
+                ':h' => 'foo',
+                ':s' => 30
+            }
+        ) }.to raise_error(Aws::DynamoDB::Errors::ValidationException, "Query condition missed key schema element: hash_key_field, range_key_field")
       end
     end
 
@@ -199,7 +229,8 @@ describe Dynamini::TestClient do
         it 'should return all items with secondary range key less than or equal to the provided value' do
           response = test_client.query(
               table_name: table_name,
-              key_condition_expression: "abc = :h AND secondary_range_key <= :e",
+              key_condition_expression: "#H = :h AND #R <= :e",
+              expression_attribute_names: {'#H' => 'abc', '#R' => 'secondary_range_key'},
               expression_attribute_values: {
                 ":h" => 'abc',
                 ":e" => 8
@@ -216,7 +247,8 @@ describe Dynamini::TestClient do
         it 'should return all items with secondary range key greater than or equal to the provided value' do
           response = test_client.query(
               table_name: table_name,
-              key_condition_expression: "abc = :h AND secondary_range_key >= :s",
+              key_condition_expression: "#H = :h AND #R >= :s",
+              expression_attribute_names: {'#H' => 'abc', '#R' => 'secondary_range_key'},
               expression_attribute_values: {
                 ":h" => 'abc',
                 ":s" => 8
@@ -233,7 +265,8 @@ describe Dynamini::TestClient do
         it 'should return all items with secondary range key between the provided values' do
           response = test_client.query(
               table_name: table_name,
-              key_condition_expression: "abc = :h AND secondary_range_key BETWEEN :s AND :e",
+              key_condition_expression: "#H = :h AND #R BETWEEN :s AND :e",
+              expression_attribute_names: {'#H' => 'abc', '#R' => 'secondary_range_key'},
               expression_attribute_values: {
                 ":h" => 'abc',
                 ":s" => 8,
@@ -251,7 +284,8 @@ describe Dynamini::TestClient do
         it 'should return all items sorted by their secondary index' do
           response = test_client.query(
               table_name: table_name,
-              key_condition_expression: "abc = :h",
+              key_condition_expression: "#H = :h",
+              expression_attribute_names: {'#H' => 'abc'},
               expression_attribute_values: {
                 ":h" => 'abc'
               },
@@ -264,6 +298,32 @@ describe Dynamini::TestClient do
         end
       end
 
+      context 'with invalid expression_attribute_names' do
+        it 'should raise an error about an invalid hash_key' do
+          expect{ test_client.query(
+              table_name: table_name,
+              key_condition_expression: "#H = :h",
+              expression_attribute_names: {'#H' => 'not_hash_key_field'},
+              expression_attribute_values: {
+                  ':h' => 'abc'
+              },
+              index_name: 'secondary_index'
+          ) }.to raise_error(Aws::DynamoDB::Errors::ValidationException, "Query condition missed key schema element: abc")
+        end
+
+        it 'should raise an error about an invalid range_key' do
+          expect{ test_client.query(
+              table_name: table_name,
+              key_condition_expression: "#H = :h AND #R >= :s",
+              expression_attribute_names: {'#H' => 'not_hash_key_field', '#R' => 'not_range_key_field'},
+              expression_attribute_values: {
+                  ':h' => 'abc',
+                  ':s' => 3
+              },
+              index_name: 'secondary_index'
+          ) }.to raise_error(Aws::DynamoDB::Errors::ValidationException, "Query condition missed key schema element: abc, secondary_range_key")
+        end
+      end
     end
 
   end

@@ -105,7 +105,7 @@ describe Dynamini::Querying do
 
     context 'hash key does not exist' do
       it 'should return an empty array' do
-        expect(TestClassWithRange.query(hash_key: 'non-existent key')).to eq([])
+        expect(TestClassWithRange.query(hash_key: 'non-existent-key')).to eq([])
       end
     end
 
@@ -178,9 +178,8 @@ describe Dynamini::Querying do
       end
 
       it 'should return no results if none are found with the secondary index' do
-        expect(TestClassWithRange.query(hash_key: 'non-existent key', index_name: :secondary_index)).to eq([])
+        expect(TestClassWithRange.query(hash_key: 'non-existent-key', index_name: :secondary_index)).to eq([])
       end
-
     end
   end
 

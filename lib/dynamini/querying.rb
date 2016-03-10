@@ -30,7 +30,6 @@ module Dynamini
 
     def query(args = {})
       fail ArgumentError, 'You must provide a :hash_key.' unless args[:hash_key]
-      fail TypeError, 'Your range key must be handled as an integer, float, date, or time.' unless self.range_is_numeric?
 
       response = dynamo_query(args)
       objects = []
@@ -38,12 +37,6 @@ module Dynamini
         objects << new(item.symbolize_keys, false)
       end
       objects
-    end
-
-    protected
-
-    def range_is_numeric?
-      handles[@range_key] && [:integer, :time, :float, :date].include?(handles[@range_key][:format])
     end
 
     private

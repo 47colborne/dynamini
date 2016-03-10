@@ -93,16 +93,6 @@ describe Dynamini::Querying do
       end
     end
 
-    context 'a non-numeric range field' do
-      it 'should raise an error' do
-        class TestClassWithStringRange < Dynamini::Base
-          set_hash_key :group
-          set_range_key :user_name
-        end
-        expect { TestClassWithStringRange.query(hash_key: 'registered', start: 'a') }.to raise_error TypeError
-      end
-    end
-
     context 'hash key does not exist' do
       it 'should return an empty array' do
         expect(TestClassWithRange.query(hash_key: 'non-existent-key')).to eq([])

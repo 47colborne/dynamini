@@ -114,19 +114,9 @@ module Dynamini
       hash_key_name, range_key_name = determine_hash_and_range(args)
 
       inspect_for_correct_keys?(tokens, hash_key_name, range_key_name)
-      start_val, end_val = range_key_limits(tokens)
 
-      if args[:index_name]
-        secondary_index_query(args, start_val, end_val)
-      else
-        hash_key = hash_key_value(args).is_a?(Integer) ? tokens[2].to_i : tokens[2]
+      args[:index_name] ?  secondary_index_query(args, tokens) : range_key_query(args, tokens)
 
-        parent = get_table(args[:table_name])[hash_key]
-        return OpenStruct.new(items: []) unless parent
-        selected = apply_filter_options(parent, args, start_val, end_val)
-
-        OpenStruct.new(items: selected)
-      end
     end
 
     def determine_hash_and_range(args)
@@ -156,7 +146,19 @@ module Dynamini
       records
     end
 
-    def secondary_index_query(args = {}, start_val = nil, end_val = nil)
+    def range_key_query(args, tokens)
+      start_val, end_val = range_key_limits(tokens)
+      hash_key = hash_key_value(args).is_a?(Integer) ? tokens[2].to_i : tokens[2]
+      parent = get_table(args[:table_name])[hash_key]
+
+      return OpenStruct.new(items: []) unless parent
+
+      selected = apply_filter_options(parent, args, start_val, end_val)
+      OpenStruct.new(items: selected)
+    end
+
+    def secondary_index_query(args = {}, tokens)
+      start_val, end_val = range_key_limits(tokens)
       index = secondary_index[args[:index_name].to_s]
       table = get_table(args[:table_name])
 
@@ -204,24 +206,27 @@ module Dynamini
       hash_key_value = args[:key][hash_key_attr]
       range_key_value = args[:key][range_key_attr]
 
-      if args[:attribute_updates]
-        args[:attribute_updates].each do |k, v|
-          table = get_table(args[:table_name])
-
-          if v[:action] == 'ADD' && table[hash_key_value]
-            # if record has been saved
-            data = table[hash_key_value]
-            data = (data[range_key_value] ||= {}) if range_key_value
-
-            attribute_hash[k] = (v[:value] + data[k].to_f)
-          else
-            attribute_hash[k] = v[:value]
-          end
-        end
-      end
+      handle_updates(args, hash_key_value, range_key_value, attribute_hash) if args[:attribute_updates]
 
       attribute_hash
     end
+
+    def handle_updates(args, hash_key_value, range_key_value, attribute_hash)
+      table = get_table(args[:table_name])
+      args[:attribute_updates].each do |k, v|
+
+        if v[:action] == 'ADD' && table[hash_key_value]
+          # if record has been saved
+          data = table[hash_key_value]
+          data = (data[range_key_value] ||= {}) if range_key_value
+
+          attribute_hash[k] = (v[:value] + data[k].to_f)
+        else
+          attribute_hash[k] = v[:value]
+        end
+      end
+    end
+
 
     def inspect_for_correct_keys?(tokens, hash_key_name, range_key_name)
       missed_keys = []

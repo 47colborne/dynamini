@@ -16,7 +16,7 @@ describe Dynamini::TypeHandler do
         object = HandledClass.new
         expect(object.price).to eq(9)
       end
-      it 'should return an array with formated item if handled' do
+      it 'should return an array with formatted items if handled' do
         object = HandledClass.new(price: ["1", "2"])
         expect(object.price).to eq([1, 2])
       end

@@ -17,7 +17,6 @@ module Dynamini
     include Dynamini::Increment
     include Dynamini::TypeHandler
 
-
     attr_reader :attributes
     class_attribute :handles
 
@@ -175,7 +174,7 @@ module Dynamini
     def attribute_updates
       changes.reduce({}) do |updates, (key, value)|
         current_value = value[1]
-        updates[key] = {value: current_value, action: 'PUT'} unless current_value.blank?
+        updates[key] = { value: current_value, action: 'PUT' }
         updates
       end
     end

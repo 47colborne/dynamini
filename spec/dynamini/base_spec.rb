@@ -200,6 +200,24 @@ describe Dynamini::Base do
             model.save
           end
         end
+
+        context 'when an empty array is submitted' do
+          it 'should submit the array' do
+            expect(model.class.client).to receive(:update_item).with(
+                                              table_name: 'bases',
+                                              key: {id: model_attributes[:id]},
+                                              attribute_updates: hash_including(
+                                                  "foo" => {
+                                                      value: [],
+                                                      action: 'PUT'
+                                                  }
+                                              )
+                                          )
+            model.foo = []
+            model.bar = 4
+            model.save
+          end
+        end
       end
 
       context 'when failing validation' do
@@ -457,6 +475,19 @@ describe Dynamini::Base do
         before { model.foo = 'bar' }
         it 'should write to the attribute' do
           expect(model.foo).to eq('bar')
+        end
+      end
+
+      context 'arrays' do
+        it 'should write to the attribute and switch type freely' do
+          model.foo = ['bar', 'baz']
+          expect(model.foo).to eq(['bar', 'baz'])
+          model.foo = ['quux']
+          expect(model.foo).to eq(['quux'])
+          model.foo = 'zort'
+          expect(model.foo).to eq('zort')
+          model.foo = []
+          expect(model.foo).to eq([])
         end
       end
     end

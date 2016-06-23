@@ -14,6 +14,13 @@ module Dynamini
       @new_record
     end
 
+    def mark(attr)
+      if @changes[attr] == [nil, nil]
+        val = @attributes[attr]
+        @changes[attr] = [val, val]
+      end
+    end
+
     private
 
     def record_change(attribute, new_value, old_value)

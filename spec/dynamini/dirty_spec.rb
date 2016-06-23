@@ -3,13 +3,14 @@ require 'spec_helper'
 describe Dynamini::Dirty do
 
   let(:model_attributes) {
-    {
-        name: 'Widget',
-        price: 9.99,
-        id: 'abcd1234',
-        hash_key: '009'
-    }
+   {
+       name: 'Widget',
+       price: 9.99,
+       id: 'abcd1234',
+       hash_key: '009'
+   }
   }
+
   let(:dirty_model) { Dynamini::Base.new(model_attributes) }
   let(:model) { Dynamini::Base.new(model_attributes, false) }
 
@@ -22,7 +23,31 @@ describe Dynamini::Dirty do
     end
 
     it 'should not include the primary key in the changes' do
-      expect(dirty_model.changes[:id]).to be_nil
+      expect(dirty_model.changes['id']).to be_nil
+    end
+  end
+
+  describe '#mark' do
+    context 'when marking an unchanged attribute' do
+      it 'should add the marked attribute to @changed' do
+        model.mark(:price)
+        expect(model.changed).to eq(['price'])
+      end
+    end
+    context 'when marking an already changed attribute' do
+      it 'should do nothing' do
+        dirty_model.mark(:price)
+        expect(dirty_model.changes['price']).to eq([nil, model_attributes[:price]])
+      end
+    end
+    context 'when using it to mark a changed array' do
+      it 'should write the mutated array value when saving' do
+        model_with_array = Dynamini::Base.new({elements: ['a','b','c'], id: 'foo'}, false)
+        model_with_array.elements << 'd'
+        model_with_array.mark(:elements)
+        model_with_array.save
+        expect(Dynamini::Base.find('foo').elements).to eq(['a','b','c','d'])
+      end
     end
   end
 

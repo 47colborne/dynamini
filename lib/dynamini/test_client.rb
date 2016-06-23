@@ -1,6 +1,7 @@
-module Dynamini
-  require 'ostruct'
+require 'ostruct'
+require 'active_support/core_ext/object/deep_dup'
 
+module Dynamini
   # In-memory database client for test purposes.
   class TestClient
 
@@ -30,7 +31,6 @@ module Dynamini
       )
 
       primary_index_insertion(hash_key_value, range_key_value, updates, table) if hash_key_value
-
     end
 
     def primary_index_insertion(hash_key_value, range_key_value, updates, table)
@@ -66,7 +66,7 @@ module Dynamini
       attributes_hash = table[hash_key_value]
       attributes_hash = attributes_hash[range_key_value] if attributes_hash && range_key_value
 
-      OpenStruct.new(item: attributes_hash)
+      OpenStruct.new(item: (attributes_hash ? attributes_hash.deep_dup : nil))
     end
 
     # No range key support - use query instead.
@@ -90,7 +90,7 @@ module Dynamini
         put_requests.each do |request_hash|
           item = request_hash[:put_request][:item]
           key = item[hash_key_attr.to_s]
-          get_table(table_name)[key] = item
+          get_table(table_name)[key] = item # not merging since real client does not support batch update
         end
       end
     end

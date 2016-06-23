@@ -19,7 +19,6 @@ describe Dynamini::TestClient do
         test_client.update_item(table_name: table_name, key: {hash_key_name: 'hash_key_value'}, attribute_updates: {abc: {value: 'def', action: 'PUT'}})
         expect(test_client.data[table_name]['hash_key_value']).to eq(abc: 'def', :hash_key_name => "hash_key_value")
       end
-
     end
 
     context 'with Hash key and range key' do
@@ -75,6 +74,13 @@ describe Dynamini::TestClient do
         test_client.update_item(table_name: table_name, key: {test_client.hash_key_attr => "abc"}, attribute_updates: {test_attr: {value: 'test', action: 'PUT'}})
 
         expect(test_client.get_item(table_name: table_name, key: {test_client.hash_key_attr => "abc", :extra_key => "extra"}).item[:test_attr]).to eq('test')
+      end
+
+      it 'should return new (cloned) arrays if arrays are present in the model attributes' do
+        test_client.update_item(table_name: table_name, key: {test_client.hash_key_attr => "abc"}, attribute_updates: {ary: {value: ['a','b','c'], action: 'PUT'}})
+        retrieved = test_client.get_item(table_name: table_name, key: {test_client.hash_key_attr => "abc", :extra_key => "extra"}).item
+        retrieved[:ary] = ['a','b','c','d']
+        expect(test_client.get_item(table_name: table_name, key: {test_client.hash_key_attr => "abc", :extra_key => "extra"}).item[:ary]).to eq(['a','b','c'])
       end
     end
 

@@ -187,7 +187,7 @@ Vehicle.find('H3LLO').stuff
 > ['wheel', 'brakes', BigDecimal(5)]
 ```
 
-Please note that changing arrays in place using mutator methods like << or map! will not record a change to the object. If you want to make changes like this, either use the assignment operator (e.g. model.array = model.array << 'foo') or call model.mark(:attribute) after mutation and before saving to force Dynamini to write the change.
+Please note that changing arrays in place using mutator methods like << or map! will not record a change to the object. If you want to make changes like this, either clone it then use the assignment operator (e.g. model.array = model.array.dup << 'foo') or call model.mark(:attribute) after mutation and before saving to force Dynamini to write the change.
 
 ## Testing
 We've included an optional in-memory test client, so you don't necessarily have to connect to a real Dynamo instance when running tests. You could also use this in your development environment if you don't have a real Dynamo instance yet, but the data saved to it won't persist through a server restart.

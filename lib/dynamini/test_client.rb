@@ -86,11 +86,17 @@ module Dynamini
 
     # TODO add range key support
     def batch_write_item(request_options)
-      request_options[:request_items].each do |table_name, put_requests|
-        put_requests.each do |request_hash|
-          item = request_hash[:put_request][:item]
-          key = item[hash_key_attr.to_s]
-          get_table(table_name)[key] = item # not merging since real client does not support batch update
+      request_options[:request_items].each do |table_name, requests|
+        requests.each do |request_hash|
+          if request_hash[:put_request]
+            item = request_hash[:put_request][:item]
+            key = item[hash_key_attr.to_s]
+            get_table(table_name)[key] = item
+          else
+            item = request_hash[:delete_request][:key]
+            id = item[hash_key_attr]
+            get_table(table_name).delete(id)
+          end
         end
       end
     end

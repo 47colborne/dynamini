@@ -349,6 +349,29 @@ describe Dynamini::TestClient do
       expect(test_client.data[table_name][1]).to eq(item1)
       expect(test_client.data[table_name][2]).to eq(item2)
     end
+
+    context 'batch deleting' do
+      before do
+        test_client.data[table_name] = {}
+        test_client.data[table_name]['one'] = {name: 'item1'}
+        test_client.data[table_name]['two'] = {name: 'item2'}
+      end
+
+      it 'should remove all items from the table' do
+
+        delete_requests = [
+                            {delete_request: {key: {id: 'one'}}},
+                            {delete_request: {key: {id: 'two'}}}
+                          ]
+
+        request_options = {request_items: {table_name => delete_requests}}
+        expect(test_client.data[table_name]['one']).to eq({name: 'item1'})
+        expect(test_client.data[table_name]['two']).to eq({name: 'item2'})
+        test_client.batch_write_item(request_options)
+        expect(test_client.data[table_name]['one']).to be_nil
+        expect(test_client.data[table_name]['two']).to be_nil
+      end
+    end
   end
 
   describe '#batch_get_item' do

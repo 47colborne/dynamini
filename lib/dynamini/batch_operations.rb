@@ -41,6 +41,12 @@ module Dynamini
       client.batch_write_item(request_options)
     end
 
+    def batch_delete(ids)
+      requests = ids.map{|id| { delete_request: { key: { hash_key => id } } } }
+      options = { request_items: { table_name => requests } }
+      client.batch_write_item(options)
+    end
+
     private
 
     def dynamo_batch_get(key_struct)

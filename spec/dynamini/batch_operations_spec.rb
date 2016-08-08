@@ -93,5 +93,21 @@ describe Dynamini::BatchOperations do
     end
   end
 
+  describe '.batch_delete' do
+    let(:ids) { ['4321', '4567', '7890'] }
+
+    before do
+      Dynamini::Base.create(id: '4321')
+      Dynamini::Base.create(id: '4567')
+      Dynamini::Base.create(id: '7890')
+    end
+
+    it 'should delete all items in collection to the database' do
+      subject.batch_delete(ids)
+      expect{ Dynamini::Base.find('4321') }.to raise_error(RuntimeError)
+      expect{ Dynamini::Base.find('4567') }.to raise_error(RuntimeError)
+      expect{ Dynamini::Base.find('7890') }.to raise_error(RuntimeError)
+    end
+  end
 end
 

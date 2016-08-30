@@ -12,7 +12,6 @@ Class methods:
 * create(attributes)
 * create!(attributes)
 * find(hash_key, range_key)
-* find_or_nil(hash_key, range_key)
 * exists?(hash_key, range_key)
 * find_or_new(hash_key, range_key)
 * import(model_array)
@@ -41,6 +40,7 @@ Instance methods:
 We've included ActiveModel::Validations, so any validators will still work and be triggered by the save/create methods.
 There are also some new functions specific to DynamoDB's API:
 
+* find_or_nil(hash_key, range_key) - since ActiveRecord's find_by isn't applicable to noSQL, use this method if you want a .find that doesn't raise exceptions when the item doesn't exist 
 * batch_find([keys]) - to retrieve multiple objects at once.
 * increment!({attribute1: amount, attribute2: amount}) - to update your record using DynamoDB's Atomic Counter functionality. (For more information, see http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html#WorkingWithItems.AtomicCounters )
 

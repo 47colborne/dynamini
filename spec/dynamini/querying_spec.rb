@@ -52,6 +52,21 @@ describe Dynamini::Querying do
     end
   end
 
+  describe '.find_or_nil' do
+    it 'should return nil if it cannot find the item' do
+      found = Dynamini::Base.find_or_nil('abcd1234')
+      expect(found).to be_nil
+    end
+
+    it 'should return the record if it exists' do
+      model.save
+      found = Dynamini::Base.find_or_nil('abcd1234')
+      expect(found.price).to eq(9.99)
+      expect(found.name).to eq('Widget')
+      expect(found.hash_key).to eq('009')
+    end
+  end
+
   describe '.query' do
     before do
       4.times do |i|

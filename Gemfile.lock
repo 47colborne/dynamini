@@ -99,6 +99,3 @@ DEPENDENCIES
   guard-shell
   pry (~> 0)
   rspec (~> 3)
-
-BUNDLED WITH
-   1.12.5

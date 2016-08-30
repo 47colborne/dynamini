@@ -9,6 +9,12 @@ module Dynamini
       new(response.item.symbolize_keys, false)
     end
 
+    def find_or_nil(hash_value, range_value = nil)
+      find(hash_value, range_value)
+    rescue RuntimeError
+      nil
+    end
+
     def exists?(hash_value, range_value = nil)
       fail 'Range key cannot be blank.' if range_key && range_value.nil?
 
@@ -47,11 +53,11 @@ module Dynamini
       expression_attribute_names = build_expression_attribute_names(args)
       query = set_extra_parameters(
           {
-          table_name: table_name,
-          key_condition_expression: key_condition_expression,
-          expression_attribute_names: expression_attribute_names,
-          expression_attribute_values: expression_attribute_values
-      },
+              table_name: table_name,
+              key_condition_expression: key_condition_expression,
+              expression_attribute_names: expression_attribute_names,
+              expression_attribute_values: expression_attribute_values
+          },
           args)
       client.query(query)
     end

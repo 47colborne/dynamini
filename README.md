@@ -12,6 +12,7 @@ Class methods:
 * create(attributes)
 * create!(attributes)
 * find(hash_key, range_key)
+* find_or_nil(hash_key, range_key)
 * exists?(hash_key, range_key)
 * find_or_new(hash_key, range_key)
 * import(model_array)

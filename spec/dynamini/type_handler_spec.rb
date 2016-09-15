@@ -37,6 +37,10 @@ describe Dynamini::TypeHandler do
     handle :start_date, :time
     handle :int_list, :integer
     handle :sym_list, :symbol
+    handle :ary, :array
+    handle :defaulted_ary, :array, default: [1,2,3]
+    handle :float_array, :array, of: :float
+    handle :sym_array, :array, of: :symbol
   end
 
   let(:handle_model) { HandleModel.new }
@@ -67,13 +71,36 @@ describe Dynamini::TypeHandler do
     expect { handle_model.int_list = {a: 1} }.to raise_error NoMethodError
   end
 
-  it 'should save casted arrays' do
-    handle_model.int_list = [12, 24, 48]
-    expect(handle_model.int_list).to eq([12, 24, 48])
+  it 'should retrieve casted float arrays' do
+    handle_model.float_array = [12, 24, 48]
+    expectations = [12.0, 24.0, 48.0]
+    handle_model.float_array.each_with_index do |e, i|
+      expect(e).to equal(expectations[i])
+    end
   end
 
-  it 'should retrieve casted arrays' do
-    handle_model.sym_list = ['foo', 'bar', 'baz']
-    expect(handle_model.sym_list).to eq([:foo, :bar, :baz])
+  it 'should retrieve casted symbol arrays' do
+    handle_model.sym_array = ['foo', 'bar', 'baz']
+    expect(handle_model.sym_array).to eq([:foo, :bar, :baz])
+  end
+
+  it 'should default arrays to []' do
+    expect(handle_model.ary).to eq([])
+  end
+
+  it 'should allow default values for arrays' do
+    expect(handle_model.defaulted_ary).to eq([1, 2, 3])
+  end
+
+  context 'legacy support' do
+    it 'should save casted arrays' do
+      handle_model.int_list = [12, 24, 48]
+      expect(handle_model.int_list).to eq([12, 24, 48])
+    end
+
+    it 'should retrieve casted arrays' do
+      handle_model.sym_list = ['foo', 'bar', 'baz']
+      expect(handle_model.sym_list).to eq([:foo, :bar, :baz])
+    end
   end
 end

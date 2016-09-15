@@ -224,10 +224,5 @@ module Dynamini
       end
       value
     end
-
-    def attribute_callback(procs, handle, value)
-      callback = procs[handle[:format]]
-      value.is_a?(Array) ? value.map { |e| callback.call(e) } : callback.call(value)
-    end
   end
 end

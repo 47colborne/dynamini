@@ -27,20 +27,6 @@ module Dynamini
       OpenStruct.new(found: objects, not_found: ids - objects.map(&hash_key))
     end
 
-    def dynamo_batch_save(model_array)
-      put_requests = model_array.map do |model|
-        {
-            put_request: {
-                item: model.attributes.reject { |_k, v| v.blank? }.stringify_keys
-            }
-        }
-      end
-      request_options = {
-          request_items: {table_name => put_requests}
-      }
-      client.batch_write_item(request_options)
-    end
-
     def batch_delete(ids)
       requests = ids.map{|id| { delete_request: { key: { hash_key => id } } } }
       options = { request_items: { table_name => requests } }
@@ -55,6 +41,20 @@ module Dynamini
               table_name => {keys: key_struct}
           }
       )
+    end
+
+    def dynamo_batch_save(model_array)
+      put_requests = model_array.map do |model|
+        {
+            put_request: {
+                item: model.attributes.reject { |_k, v| v.blank? }.stringify_keys
+            }
+        }
+      end
+      request_options = {
+          request_items: {table_name => put_requests}
+      }
+      client.batch_write_item(request_options)
     end
   end
 end

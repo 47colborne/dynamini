@@ -40,7 +40,7 @@ describe Dynamini::BatchOperations do
     it 'should batch write the models to dynamo' do
       model2 = Dynamini::Base.new(id: '123')
       model3 = Dynamini::Base.new(id: '456')
-      Dynamini::Base.dynamo_batch_save([model2, model3])
+      Dynamini::Base.import([model2, model3])
       expect(Dynamini::Base.find('123')).to_not be_nil
       expect(Dynamini::Base.find('456')).to_not be_nil
     end

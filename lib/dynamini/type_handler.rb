@@ -1,7 +1,32 @@
 module Dynamini
   module TypeHandler
+
+    GETTER_PROCS = {
+        integer:  proc { |v| v.to_i },
+        date:     proc { |v| v.is_a?(Date) ? v : Time.at(v).to_date },
+        time:     proc { |v| Time.at(v.to_f) },
+        float:    proc { |v| v.to_f },
+        symbol:   proc { |v| v.to_sym },
+        string:   proc { |v| v },
+        boolean:  proc { |v| v },
+        array:    proc { |v| v }
+    }
+
+    SETTER_PROCS = {
+        integer:  proc { |v| v.to_i },
+        time:     proc { |v| (v.is_a?(Date) ? v.to_time : v).to_f },
+        float:    proc { |v| v.to_f },
+        symbol:   proc { |v| v.to_s },
+        string:   proc { |v| v },
+        boolean:  proc { |v| v },
+        date:     proc { |v| v.to_time.to_f },
+        array:    proc { |v| v }
+    }
+
     module ClassMethods
       def handle(column, format_class, options = {})
+        options[:default] ||= [] if format_class == :array
+
         self.handles = self.handles.merge(column => { format: format_class, options: options })
 
         define_handled_getter(column, format_class, options)
@@ -27,28 +52,25 @@ module Dynamini
       end
     end
 
-    GETTER_PROCS = {
-        integer:  proc { |v| v.to_i },
-        date:     proc { |v| v.is_a?(Date) ? v : Time.at(v).to_date },
-        time:     proc { |v| Time.at(v.to_f) },
-        float:    proc { |v| v.to_f },
-        symbol:   proc { |v| v.to_sym },
-        string:   proc { |v| v },
-        boolean:  proc { |v| v }
-    }
-
-    SETTER_PROCS = {
-        integer:  proc { |v| v.to_i },
-        time:     proc { |v| (v.is_a?(Date) ? v.to_time : v).to_f },
-        float:    proc { |v| v.to_f },
-        symbol:   proc { |v| v.to_s },
-        string:   proc { |v| v },
-        boolean:  proc { |v| v },
-        date:     proc { |v| v.to_time.to_f }
-    }
+    private
 
     def handles
       self.class.handles
+    end
+
+    def attribute_callback(procs, handle, value)
+      type = handle[:options][:of] || handle[:format]
+      callback = procs[type]
+
+      if handle_as_array?(handle, value)
+        value.map { |e| callback.call(e) }
+      else
+        callback.call(value)
+      end
+    end
+
+    def handle_as_array?(handle, value)
+      handle[:format] == :array || value.is_a?(Array)
     end
 
     def self.included(base)

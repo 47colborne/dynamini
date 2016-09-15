@@ -109,7 +109,7 @@ You can save arrays to your Dynamini model. Optionally, you can have Dynamini pe
 ```ruby
 class Vehicle < Dynamini::Base
     set_hash_key :vin
-    handle :parts, :array, of: :symbol
+    handle :parts, :array, of: :symbol # :of accepts the same types as :handle
     handle :other_array, :array
 end
 

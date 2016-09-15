@@ -98,9 +98,49 @@ The following datatypes are supported by handle:
 * :date
 * :time
 * :string
+* :array
 
 Booleans and strings don't actually need to be translated, but you can set up defaults for those fields this way.
 The magic fields updated_at and created_at are handled as :time by default.
+
+## Array Support
+You can save arrays to your Dynamini model. Optionally, you can have Dynamini perform type conversion on each element of your array. Here's how it works:
+
+```ruby
+class Vehicle < Dynamini::Base
+    set_hash_key :vin
+    handle :parts, :array, of: :symbol
+    handle :other_array, :array
+end
+
+car = Vehicle.new(vin: 'H3LL0')
+car.parts
+> []
+
+car.parts = 'wheel'
+car.parts
+> :wheel
+
+car.parts = ['wheel', 'brakes', 'seat']
+car.parts
+> [:wheel, :brakes, :seat]
+
+# This line will raise an error since 5 cannot be converted to a symbol.
+car.parts = ['wheel', 'brakes', 5]
+
+# If you want a multitype array, invoke :handle without the :of option.
+car.other_array = ['wheel', 'brakes', 5]
+car.other_array
+> ['wheel', 'brakes', 5]
+# But then you won't have any type conversion.
+car.save
+Vehicle.find('H3LLO').other_array
+> ['wheel', 'brakes', BigDecimal(5)]
+```
+
+Please note that changing arrays in place using mutator methods like << or map! will not record a change to the object. 
+
+If you want to make changes like this, either clone it then use the assignment operator (e.g. model.array = model.array.dup << 'foo') or call model.mark(:attribute) after mutation and before saving to force Dynamini to write the change.
 
 ## Querying With Range Keys
 
@@ -153,44 +193,6 @@ DailyWeather.query(hash_key: "Toronto", limit: 2)
 DailyWeather.query(hash_key: "Toronto", scan_index_forward: false)
 > [C, B, A]
 ```
-
-## Array Support
-You can save arrays to your Dynamini model. If you've :handled that attribute, it will attempt to convert its contents to the correct datatype when setting and getting. Here's how it works:
-
-```ruby
-class Vehicle < Dynamini::Base
-    set_hash_key :vin
-    handle :parts, :symbol, default: []
-end
-
-car = Vehicle.new(vin: 'H3LL0')
-car.parts
-> []
-
-car.parts = 'wheel'
-car.parts
-> :wheel
-
-car.parts = ['wheel', 'brakes', 'seat']
-car.parts
-> [:wheel, :brakes, :seat]
-
-# This line will raise an error since 5 cannot be converted to a symbol.
-car.parts = ['wheel', 'brakes', 5]
-
-# That multitype array can be saved to a non-:handled attribute.
-car.stuff = ['wheel', 'brakes', 5]
-car.stuff
-> ['wheel', 'brakes', 5]
-# But then you won't have any type conversion.
-car.save
-Vehicle.find('H3LLO').stuff
-> ['wheel', 'brakes', BigDecimal(5)]
-```
-
-Please note that changing arrays in place using mutator methods like << or map! will not record a change to the object. 
-
-If you want to make changes like this, either clone it then use the assignment operator (e.g. model.array = model.array.dup << 'foo') or call model.mark(:attribute) after mutation and before saving to force Dynamini to write the change.
 
 ## Testing
 We've included an optional in-memory test client, so you don't necessarily have to connect to a real Dynamo instance when running tests. You could also use this in your development environment if you don't have a real Dynamo instance yet, but the data saved to it won't persist through a server restart.

@@ -43,6 +43,7 @@ There are also some new functions specific to DynamoDB's API:
 * find_or_nil(hash_key, range_key) - since ActiveRecord's find_by isn't applicable to noSQL, use this method if you want a .find that doesn't raise exceptions when the item doesn't exist 
 * batch_find([keys]) - to retrieve multiple objects at once.
 * increment!({attribute1: amount, attribute2: amount}) - to update your record using DynamoDB's Atomic Counter functionality. (For more information, see http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html#WorkingWithItems.AtomicCounters )
+* add_to(attribute, value) - If you use this to modify your attribute, when saving, Dynamini will update that attribute with ADD instead of PUT. Your attribute must be handled as an addable type - :integer, :float, :array, :set, :date, or :time. (For more information on ADD actions, see http://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_UpdateItem.html )
 
 ## Configuration
 In application.rb, or in initializers/dynamini.rb, include your AWS settings like so:
@@ -99,12 +100,13 @@ The following datatypes are supported by handle:
 * :time
 * :string
 * :array
+* :set
 
 Booleans and strings don't actually need to be translated, but you can set up defaults for those fields this way.
 The magic fields updated_at and created_at are handled as :time by default.
 
-## Array Support
-You can save arrays to your Dynamini model. Optionally, you can have Dynamini perform type conversion on each element of your array. Here's how it works:
+## Enumerable Support
+You can save arrays and sets to your Dynamini model. Optionally, you can have Dynamini perform type conversion on each element of your enumerable. Here's how it works:
 
 ```ruby
 class Vehicle < Dynamini::Base
@@ -138,7 +140,7 @@ Vehicle.find('H3LLO').other_array
 > ['wheel', 'brakes', BigDecimal(5)]
 ```
 
-Please note that changing arrays in place using mutator methods like << or map! will not record a change to the object. 
+Please note that changing enumerables in place using mutator methods like << or map! will not record a change to the object. 
 
 If you want to make changes like this, either clone it then use the assignment operator (e.g. model.array = model.array.dup << 'foo') or call model.mark(:attribute) after mutation and before saving to force Dynamini to write the change.
 
@@ -222,7 +224,7 @@ config.after(:each) {
 * You can also write any arbitrary attribute to your model.
 * Other models in your app cannot have a has_one or has_many relationship with your Dynamini model, since these would require a table scan. Your other models can still use belongs_to.
 * If you change the primary key value on an instance of your model, then resave it, you'll have two copies in your database.
-* If you use non-numeric strings for your primary key, remember to change your foreign key columns on related objects to be string type.
+* If you use non-numeric strings for your primary key, remember to change your foreign key columns on related ActiveRecord tables to be string type.
 * You might want to conditionally set the table name for your model based on the Rails.env, enabling separate tables for development and production.
 
 ## Contributing

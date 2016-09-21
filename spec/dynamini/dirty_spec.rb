@@ -16,8 +16,6 @@ describe Dynamini::Dirty do
 
 
   describe '.new' do
-
-
     it 'should append all initial attrs to @changed, including hash_key' do
       expect(dirty_model.changed).to eq(model_attributes.keys.map(&:to_s).delete_if { |k, v| k == 'id' })
     end
@@ -37,7 +35,7 @@ describe Dynamini::Dirty do
     context 'when marking an already changed attribute' do
       it 'should do nothing' do
         dirty_model.mark(:price)
-        expect(dirty_model.changes['price']).to eq([nil, model_attributes[:price]])
+        expect(dirty_model.changes['price']).to eq([nil, model_attributes[:price], 'PUT'])
       end
     end
     context 'when using it to mark a changed array' do
@@ -138,14 +136,26 @@ describe Dynamini::Dirty do
     context 'attribute changed' do
       before { model.price = 1 }
       it 'should include the changed attribute' do
-        expect(model.changes['price']).to eq([9.99, 1])
+        expect(model.changes['price']).to eq([9.99, 1, 'PUT'])
+      end
+    end
+
+    context 'attribute changed with ADD action' do
+
+      class AddModel < Dynamini::Base
+        handle :price, :float
+      end
+      it 'should include a change with ADD action specified' do
+        model = AddModel.create!(model_attributes)
+        model.add_to(:price, 1)
+        expect(model.changes['price']).to eq([9.99, 1, 'ADD'])
       end
     end
 
     context 'attribute created' do
       before { model.foo = 'bar' }
       it 'should include the created attribute' do
-        expect(model.changes['foo']).to eq([nil, 'bar'])
+        expect(model.changes['foo']).to eq([nil, 'bar', 'PUT'])
       end
     end
 
@@ -155,7 +165,7 @@ describe Dynamini::Dirty do
         model.foo = 'baz'
       end
       it 'should only include one copy of the changed attribute' do
-        expect(model.changes['foo']).to eq(['bar', 'baz'])
+        expect(model.changes['foo']).to eq(['bar', 'baz', 'PUT'])
       end
     end
   end

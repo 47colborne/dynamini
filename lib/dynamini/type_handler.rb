@@ -9,7 +9,8 @@ module Dynamini
         symbol:   proc { |v| v.to_sym },
         string:   proc { |v| v },
         boolean:  proc { |v| v },
-        array:    proc { |v| v }
+        array:    proc { |v| v },
+        set:      proc { |v| v }
     }
 
     SETTER_PROCS = {
@@ -20,12 +21,14 @@ module Dynamini
         string:   proc { |v| v },
         boolean:  proc { |v| v },
         date:     proc { |v| v.to_time.to_f },
-        array:    proc { |v| v }
+        array:    proc { |v| v },
+        set:      proc { |v| v }
     }
 
     module ClassMethods
       def handle(column, format_class, options = {})
-        options[:default] ||= [] if format_class == :array
+        options[:default] ||= format_default(format_class)
+        options[:default] ||= Set.new if format_class == :set
 
         self.handles = self.handles.merge(column => { format: format_class, options: options })
 
@@ -50,6 +53,15 @@ module Dynamini
           write_attribute(column, value)
         end
       end
+
+      def format_default(format_class)
+        case format_class
+          when :array
+            []
+          when :set
+            Set.new
+        end
+      end
     end
 
     private
@@ -61,20 +73,24 @@ module Dynamini
     def attribute_callback(procs, handle, value)
       type = handle[:options][:of] || handle[:format]
       callback = procs[type]
-
-      if handle_as_array?(handle, value)
+      if value.is_a?(Array)
         value.map { |e| callback.call(e) }
+      elsif value.is_a?(Set)
+        Set.new(value.map { |e| callback.call(e) })
+      elsif handled_as?(handle, [:array, :set])
+        raise ArgumentError, "Can't write a non-enumerable value to field handled as #{handle[:format]}"
       else
         callback.call(value)
       end
     end
 
-    def handle_as_array?(handle, value)
-      handle[:format] == :array || value.is_a?(Array)
+    def handled_as?(handle, type)
+      type.include? handle[:format]
     end
 
     def self.included(base)
       base.extend ClassMethods
     end
+
   end
 end

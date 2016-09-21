@@ -15,16 +15,17 @@ module Dynamini
     end
 
     def mark(attr)
-      if @changes[attr] == [nil, nil]
+      if @changes[attr][0..1] == [nil, nil]
         val = @attributes[attr]
-        @changes[attr] = [val, val]
+        @changes[attr][0..1] = [val, val]
       end
     end
 
     private
 
-    def record_change(attribute, new_value, old_value)
-      @changes[attribute] = [old_value, new_value]
+    def record_change(attribute, old_value, new_value, action)
+      action ||= 'PUT'
+      @changes[attribute] = [old_value, new_value, action]
     end
 
     def clear_changes

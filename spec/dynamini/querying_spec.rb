@@ -32,6 +32,7 @@ describe Dynamini::Querying do
       expect(found.price).to eq(9.99)
       expect(found.name).to eq('Widget')
       expect(found.hash_key).to eq('009')
+      expect(found).to_not be_new_record
     end
 
     context 'when the object does not exist' do

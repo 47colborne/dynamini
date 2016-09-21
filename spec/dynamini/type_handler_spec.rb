@@ -41,6 +41,10 @@ describe Dynamini::TypeHandler do
     handle :defaulted_ary, :array, default: [1,2,3]
     handle :float_array, :array, of: :float
     handle :sym_array, :array, of: :symbol
+    handle :my_set, :set
+    handle :defaulted_set, :set, default: Set.new([1,2,3])
+    handle :sym_set, :set, of: :symbol
+    handle :float_set, :set, of: :float
   end
 
   let(:handle_model) { HandleModel.new }
@@ -71,25 +75,52 @@ describe Dynamini::TypeHandler do
     expect { handle_model.int_list = {a: 1} }.to raise_error NoMethodError
   end
 
-  it 'should retrieve casted float arrays' do
-    handle_model.float_array = [12, 24, 48]
-    expectations = [12.0, 24.0, 48.0]
-    handle_model.float_array.each_with_index do |e, i|
-      expect(e).to equal(expectations[i])
+  it 'should reject non-enumerable data for enumerable handles' do
+    expect { handle_model.my_set = 2 }.to raise_error ArgumentError
+    expect { handle_model.ary = 2}.to raise_error ArgumentError
+  end
+
+  context 'when handling as array' do
+    it 'should retrieve casted float arrays' do
+      handle_model.float_array = [12, 24, 48]
+      expectations = [12.0, 24.0, 48.0]
+      handle_model.float_array.each_with_index do |e, i|
+        expect(e).to equal(expectations[i])
+      end
+    end
+
+    it 'should retrieve casted symbol arrays' do
+      handle_model.sym_array = ['foo', 'bar', 'baz']
+      expect(handle_model.sym_array).to eq([:foo, :bar, :baz])
+    end
+
+    it 'should default arrays to []' do
+      expect(handle_model.ary).to eq([])
+    end
+
+    it 'should allow default values for arrays' do
+      expect(handle_model.defaulted_ary).to eq([1, 2, 3])
     end
   end
 
-  it 'should retrieve casted symbol arrays' do
-    handle_model.sym_array = ['foo', 'bar', 'baz']
-    expect(handle_model.sym_array).to eq([:foo, :bar, :baz])
-  end
+  context 'when handling as set' do
+    it 'should retrieve casted float sets' do
+      handle_model.float_set = Set.new([12, 24, 48])
+      expect(handle_model.float_set).to eq(Set.new([12.0, 24.0, 48.0]))
+    end
 
-  it 'should default arrays to []' do
-    expect(handle_model.ary).to eq([])
-  end
+    it 'should retrieve casted symbol arrays' do
+      handle_model.sym_set = Set.new(['foo', 'bar', 'baz'])
+      expect(handle_model.sym_set).to eq(Set.new([:foo, :bar, :baz]))
+    end
 
-  it 'should allow default values for arrays' do
-    expect(handle_model.defaulted_ary).to eq([1, 2, 3])
+    it 'should default sets to empty sets' do
+      expect(handle_model.my_set).to eq(Set.new)
+    end
+
+    it 'should allow default values for arrays' do
+      expect(handle_model.defaulted_ary).to eq([1, 2, 3])
+    end
   end
 
   context 'legacy support' do

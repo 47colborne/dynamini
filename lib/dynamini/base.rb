@@ -4,6 +4,7 @@ require_relative 'client_interface'
 require_relative 'dirty'
 require_relative 'increment'
 require_relative 'type_handler'
+require_relative 'adder'
 
 module Dynamini
   # Core db interface class.
@@ -16,6 +17,8 @@ module Dynamini
     include Dynamini::Dirty
     include Dynamini::Increment
     include Dynamini::TypeHandler
+    include Dynamini::Adder
+
 
     attr_reader :attributes
     class_attribute :handles
@@ -74,7 +77,7 @@ module Dynamini
       @attributes = {}
       clear_changes
       attributes.each do |k, v|
-        write_attribute(k, v, new_record)
+        write_attribute(k, v, change: new_record)
       end
     end
 
@@ -174,7 +177,7 @@ module Dynamini
     def attribute_updates
       changes.reduce({}) do |updates, (key, value)|
         current_value = value[1]
-        updates[key] = { value: current_value, action: 'PUT' }
+        updates[key] = { value: current_value, action: value[2] || 'PUT' }
         updates
       end
     end
@@ -207,13 +210,13 @@ module Dynamini
       @attributes.keys.include?(name) || write_method?(name) || was_method?(name) || super
     end
 
-    def write_attribute(attribute, new_value, change = true)
+    def write_attribute(attribute, new_value, change: true, **options)
       old_value = read_attribute(attribute)
       if (handle = handles[attribute.to_sym]) && !new_value.nil?
         new_value = attribute_callback(SETTER_PROCS, handle, new_value)
       end
       @attributes[attribute] = new_value
-      record_change(attribute, new_value, old_value) if change && new_value != old_value
+      record_change(attribute, old_value, new_value, options[:action]) if change && new_value != old_value
     end
 
     def read_attribute(name)

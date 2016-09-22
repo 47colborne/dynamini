@@ -9,8 +9,8 @@ module Dynamini
         symbol:   proc { |v| v.to_sym },
         string:   proc { |v| v },
         boolean:  proc { |v| v },
-        array:    proc { |v| v },
-        set:      proc { |v| v }
+        array:    proc { |v| v.to_a },
+        set:      proc { |v| Set.new(v) }
     }
 
     SETTER_PROCS = {
@@ -21,8 +21,8 @@ module Dynamini
         string:   proc { |v| v },
         boolean:  proc { |v| v },
         date:     proc { |v| v.to_time.to_f },
-        array:    proc { |v| v },
-        set:      proc { |v| v }
+        array:    proc { |v| v.to_a },
+        set:      proc { |v| Set.new(v) }
     }
 
     module ClassMethods
@@ -71,13 +71,11 @@ module Dynamini
     end
 
     def attribute_callback(procs, handle, value)
-      type = handle[:options][:of] || handle[:format]
-      callback = procs[type]
-      if value.is_a?(Array)
-        value.map { |e| callback.call(e) }
-      elsif value.is_a?(Set)
-        Set.new(value.map { |e| callback.call(e) })
-      elsif handled_as?(handle, [:array, :set])
+      callback = procs[handle[:format]]
+      if should_convert_elements?(handle, value)
+        result = convert_elements(value, procs[handle[:options][:of]])
+        callback.call(result)
+      elsif invalid_enumerable_value?(handle, value)
         raise ArgumentError, "Can't write a non-enumerable value to field handled as #{handle[:format]}"
       else
         callback.call(value)
@@ -90,6 +88,18 @@ module Dynamini
 
     def self.included(base)
       base.extend ClassMethods
+    end
+
+    def should_convert_elements?(handle, value)
+      handle[:options][:of] && (value.is_a?(Array) || value.is_a?(Set))
+    end
+
+    def invalid_enumerable_value?(handle, value)
+      handled_as?(handle, [:array, :set]) && !value.is_a?(Enumerable)
+    end
+
+    def convert_elements(enumerable, callback)
+      enumerable.map { |e| callback.call(e) }
     end
 
   end

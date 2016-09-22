@@ -16,10 +16,6 @@ describe Dynamini::TypeHandler do
         object = HandledClass.new
         expect(object.price).to eq(9)
       end
-      it 'should return an array with formatted items if handled' do
-        object = HandledClass.new(price: ["1", "2"])
-        expect(object.price).to eq([1, 2])
-      end
     end
 
     context 'when writing the handled attribute' do
@@ -101,6 +97,11 @@ describe Dynamini::TypeHandler do
     it 'should allow default values for arrays' do
       expect(handle_model.defaulted_ary).to eq([1, 2, 3])
     end
+
+    it 'should convert sets to arrays' do
+      handle_model.float_array = Set.new([12,24,48])
+      expect(handle_model.float_array).to_not be_a(Set)
+    end
   end
 
   context 'when handling as set' do
@@ -121,17 +122,10 @@ describe Dynamini::TypeHandler do
     it 'should allow default values for arrays' do
       expect(handle_model.defaulted_ary).to eq([1, 2, 3])
     end
-  end
 
-  context 'legacy support' do
-    it 'should save casted arrays' do
-      handle_model.int_list = [12, 24, 48]
-      expect(handle_model.int_list).to eq([12, 24, 48])
-    end
-
-    it 'should retrieve casted arrays' do
-      handle_model.sym_list = ['foo', 'bar', 'baz']
-      expect(handle_model.sym_list).to eq([:foo, :bar, :baz])
+    it 'should convert arrays to sets' do
+      handle_model.float_set = [12,24,48]
+      expect(handle_model.float_set).to_not be_a(Array)
     end
   end
 end

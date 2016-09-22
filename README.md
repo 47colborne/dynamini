@@ -119,7 +119,7 @@ car = Vehicle.new(vin: 'H3LL0')
 car.parts
 > []
 
-car.parts = 'wheel'
+car.parts = ['wheel']
 car.parts
 > :wheel
 
@@ -130,7 +130,7 @@ car.parts
 # This line will raise an error since 5 cannot be converted to a symbol.
 car.parts = ['wheel', 'brakes', 5]
 
-# If you want a multitype array, invoke :handle without the :of option.
+# If you want a multitype array, use :handle without the :of option.
 car.other_array = ['wheel', 'brakes', 5]
 car.other_array
 > ['wheel', 'brakes', 5]
@@ -140,7 +140,7 @@ Vehicle.find('H3LLO').other_array
 > ['wheel', 'brakes', BigDecimal(5)]
 ```
 
-Please note that changing enumerables in place using mutator methods like << or map! will not record a change to the object. 
+Please note that changing enumerables in place using mutator methods like << or map! will not record a change to the object.
 
 If you want to make changes like this, either clone it then use the assignment operator (e.g. model.array = model.array.dup << 'foo') or call model.mark(:attribute) after mutation and before saving to force Dynamini to write the change.
 

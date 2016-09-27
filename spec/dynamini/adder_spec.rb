@@ -9,6 +9,8 @@ describe Dynamini::Adder do
     handle :when, :date
     handle :what_time, :time
     handle :widget_count, :integer
+    handle :new_set, :set
+    handle :new_array, :array
   end
 
   let(:model_attributes) {
@@ -22,7 +24,7 @@ describe Dynamini::Adder do
     }
   }
 
-  let(:model) { AddHandledModel.new(model_attributes, false) }
+  let(:model) { AddHandledModel.new(model_attributes) }
 
 
   describe '.add_to' do
@@ -63,6 +65,12 @@ describe Dynamini::Adder do
           expect{ model.add_to(:things, 4) }.to raise_error ArgumentError
         end
       end
+      context 'adding to an uninitialized set' do
+        it 'creates the set' do
+          model.add_to(:new_set, Set.new([4]))
+          expect(model.new_set).to eq(Set.new([4]))
+        end
+      end
     end
 
     context 'adding to an array' do
@@ -76,6 +84,22 @@ describe Dynamini::Adder do
         it 'raises an error' do
           expect{ model.add_to(:stuff, 4) }.to raise_error ArgumentError
         end
+      end
+      context 'adding to an empty array' do
+        it 'creates the array' do
+          model.add_to(:new_array, [4])
+          expect(model.new_array).to eq([4])
+        end
+      end
+    end
+
+    context 'without reading a previously saved item' do
+      it 'still adds' do
+        model.save
+        model2 = AddHandledModel.new(id: model_attributes[:id])
+        model2.add_to(:price, 2)
+        model2.save
+        expect(AddHandledModel.find(model_attributes[:id]).price).to eq(11.99)
       end
     end
   end

@@ -127,5 +127,13 @@ describe Dynamini::TypeHandler do
       handle_model.float_set = [12,24,48]
       expect(handle_model.float_set).to_not be_a(Array)
     end
+
+    it 'should complain if trying to cast elements as arrays' do
+      expect{ HandleModel.handle :invalid, :set, of: :array}.to raise_error ArgumentError
+    end
+
+    it 'should complain if trying to cast elements as sets' do
+      expect{ HandleModel.handle :invalid, :set, of: :set}.to raise_error ArgumentError
+    end
   end
 end

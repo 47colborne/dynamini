@@ -27,6 +27,8 @@ module Dynamini
 
     module ClassMethods
       def handle(column, format_class, options = {})
+        validate_handle(format_class, options)
+
         options[:default] ||= format_default(format_class)
         options[:default] ||= Set.new if format_class == :set
 
@@ -60,6 +62,14 @@ module Dynamini
             []
           when :set
             Set.new
+        end
+      end
+
+      def validate_handle(format, options)
+        if format == :set
+          if options[:of] && [:set, :array].include?(options[:of])
+            raise ArgumentError, 'Invalid handle: cannot store non-primitive datatypes within a set.'
+          end
         end
       end
     end
@@ -101,6 +111,5 @@ module Dynamini
     def convert_elements(enumerable, callback)
       enumerable.map { |e| callback.call(e) }
     end
-
   end
 end

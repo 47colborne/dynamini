@@ -220,12 +220,10 @@ module Dynamini
     def handle_updates(args, hash_key_value, range_key_value, attribute_hash)
       table = get_table(args[:table_name])
       args[:attribute_updates].each do |k, v|
-
         if v[:action] == 'ADD' && table[hash_key_value]
           # if record has been saved
           data = table[hash_key_value]
           data = (data[range_key_value] ||= {}) if range_key_value
-
           attribute_hash[k] = data[k] ? data[k] + v[:value] : v[:value]
         else
           attribute_hash[k] = v[:value]

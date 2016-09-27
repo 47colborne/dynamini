@@ -111,7 +111,7 @@ You can save arrays and sets to your Dynamini model. Optionally, you can have Dy
 ```ruby
 class Vehicle < Dynamini::Base
     set_hash_key :vin
-    handle :parts, :array, of: :symbol # :of accepts string and numeric types 
+    handle :parts, :array, of: :symbol # :of accepts all types except :set and :array 
     handle :other_array, :array
 end
 

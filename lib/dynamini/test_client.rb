@@ -226,7 +226,7 @@ module Dynamini
           data = table[hash_key_value]
           data = (data[range_key_value] ||= {}) if range_key_value
 
-          attribute_hash[k] = (v[:value] + data[k].to_f)
+          attribute_hash[k] = data[k] ? data[k] + v[:value] : v[:value]
         else
           attribute_hash[k] = v[:value]
         end

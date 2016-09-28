@@ -37,7 +37,13 @@ describe Dynamini::Querying do
 
     context 'when the object does not exist' do
       it 'should raise an error' do
-        expect { Dynamini::Base.find('f') }.to raise_error 'Item not found.'
+        expect do
+          Dynamini::Base.find('1')
+        end.to raise_error Dynamini::RecordNotFound, "Couldn't find Dynamini::Base with 'id'=1"
+
+        expect do
+          TestClassWithRange.find('1', '2')
+        end.to raise_error Dynamini::RecordNotFound, "Couldn't find TestClassWithRange with 'foo'=1 and 'bar'=2"
       end
 
     end

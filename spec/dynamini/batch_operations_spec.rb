@@ -104,9 +104,9 @@ describe Dynamini::BatchOperations do
 
     it 'should delete all items in collection to the database' do
       subject.batch_delete(ids)
-      expect{ Dynamini::Base.find('4321') }.to raise_error(RuntimeError)
-      expect{ Dynamini::Base.find('4567') }.to raise_error(RuntimeError)
-      expect{ Dynamini::Base.find('7890') }.to raise_error(RuntimeError)
+      expect{ Dynamini::Base.find('4321') }.to raise_error(Dynamini::RecordNotFound)
+      expect{ Dynamini::Base.find('4567') }.to raise_error(Dynamini::RecordNotFound)
+      expect{ Dynamini::Base.find('7890') }.to raise_error(Dynamini::RecordNotFound)
     end
   end
 end

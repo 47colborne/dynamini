@@ -5,13 +5,19 @@ module Dynamini
     def find(hash_value, range_value = nil)
       fail 'Range key cannot be blank.' if range_key && range_value.nil?
       response = client.get_item(table_name: table_name, key: create_key_hash(hash_value, range_value))
-      raise 'Item not found.' unless response.item
+
+      unless response.item
+        error_msg = "Couldn't find #{self} with '#{hash_key}'=#{hash_value}"
+        error_msg += " and '#{range_key}'=#{range_value}" if range_value
+        raise Dynamini::RecordNotFound, error_msg
+      end
+
       new(response.item.symbolize_keys, false)
     end
 
     def find_or_nil(hash_value, range_value = nil)
       find(hash_value, range_value)
-    rescue RuntimeError
+    rescue Dynamini::RecordNotFound
       nil
     end
 
@@ -24,7 +30,6 @@ module Dynamini
 
     def find_or_new(hash_value, range_value = nil)
       validate_query_values(hash_value, range_value)
-
 
       r = client.get_item(table_name: table_name, key: create_key_hash(hash_value, range_value))
       if r.item

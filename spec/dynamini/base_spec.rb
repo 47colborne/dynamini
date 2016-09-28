@@ -256,7 +256,7 @@ describe Dynamini::Base do
       context 'when the item exists in the DB' do
         it 'should delete the item and return the item' do
           expect(model.delete).to eq(model)
-          expect { Dynamini::Base.find(model.id) }.to raise_error ('Item not found.')
+          expect { Dynamini::Base.find(model.id) }.to raise_error Dynamini::RecordNotFound
         end
       end
       context 'when the item does not exist in the DB' do

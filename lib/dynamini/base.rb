@@ -5,6 +5,7 @@ require_relative 'dirty'
 require_relative 'increment'
 require_relative 'type_handler'
 require_relative 'adder'
+require_relative 'errors'
 
 module Dynamini
   # Core db interface class.
@@ -18,7 +19,6 @@ module Dynamini
     include Dynamini::Increment
     include Dynamini::TypeHandler
     include Dynamini::Adder
-
 
     attr_reader :attributes
     class_attribute :handles
@@ -114,7 +114,6 @@ module Dynamini
 
     def save!(options = {})
       run_callbacks :save do
-
         options[:validate] = true if options[:validate].nil?
 
         unless @changes.empty?

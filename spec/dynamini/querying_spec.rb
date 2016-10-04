@@ -45,7 +45,14 @@ describe Dynamini::Querying do
           TestClassWithRange.find('1', '2')
         end.to raise_error Dynamini::RecordNotFound, "Couldn't find TestClassWithRange with 'foo'=1 and 'bar'=2"
       end
+    end
 
+    context 'when finding a nil or empty id' do
+      it 'raises an error' do
+        expect{ Dynamini::Base.find('') }.to raise_error ArgumentError
+        expect{ Dynamini::Base.find([]) }.to raise_error ArgumentError
+        expect{ Dynamini::Base.find() }.to raise_error ArgumentError
+      end
     end
 
     context 'when retrieving a subclass' do
@@ -55,6 +62,62 @@ describe Dynamini::Querying do
       it 'should return the object as an instance of the subclass' do
         Foo.create(id: '1')
         expect(Foo.find('1')).to be_a Foo
+      end
+    end
+
+    context 'when hash key is not handled' do
+      context 'when finding a record by integer when hash key was string' do
+        it 'should raise an error' do
+          Dynamini::Base.create!(id: '123', foo: 'bar')
+          expect{ Dynamini::Base.find(123) }.to raise_error(Dynamini::RecordNotFound)
+        end
+      end
+
+      context 'when finding a record by string when hash key was integer' do
+        it 'should not find the item' do
+          Dynamini::Base.create!(id: 123, foo: 'bar')
+          expect{ Dynamini::Base.find('123') }.to raise_error(Dynamini::RecordNotFound)
+        end
+      end
+    end
+
+    context 'when hash key is handled as string' do
+      class StringHandledHash < Dynamini::Base
+        set_hash_key :id, :string
+      end
+
+      context 'when finding a record by integer when hash key was string' do
+        it 'should find the item' do
+          StringHandledHash.create!(id: '123', foo: 'bar')
+          expect(StringHandledHash.find(123).foo).to eq('bar')
+        end
+      end
+
+      context 'when finding a record by string when hash key was integer' do
+        it 'should find the item' do
+          StringHandledHash.create!(id: 123, foo: 'bar')
+          expect(StringHandledHash.find('123').foo).to eq('bar')
+        end
+      end
+    end
+
+    context 'when hash key is handled as integer' do
+      class IntegerHandledHash < Dynamini::Base
+        set_hash_key :id, :integer
+      end
+
+      context 'when finding a record by integer when hash key was string' do
+        it 'should the item' do
+          IntegerHandledHash.create!(id: '123', foo: 'bar')
+          expect(IntegerHandledHash.find(123).foo).to eq('bar')
+        end
+      end
+
+      context 'when finding a record by string when hash key was integer' do
+        it 'should find the item' do
+          IntegerHandledHash.create!(id: 123, foo: 'bar')
+          expect(IntegerHandledHash.find('123').foo).to eq('bar')
+        end
       end
     end
   end

@@ -3,6 +3,7 @@ module Dynamini
     OPTIONAL_QUERY_PARAMS = [:limit, :scan_index_forward]
 
     def find(hash_value, range_value = nil)
+      fail ArgumentError, 'Hash key cannot be nil or empty.' if (hash_value.nil? || hash_value.blank?)
       fail 'Range key cannot be blank.' if range_key && range_value.nil?
       response = client.get_item(table_name: table_name, key: create_key_hash(hash_value, range_value))
 

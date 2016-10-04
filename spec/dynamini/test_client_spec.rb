@@ -81,7 +81,7 @@ describe Dynamini::TestClient do
         expect(test_client.get_item(table_name: table_name, key: {test_client.hash_key_attr => "abc"}).item[:test_attr]).to eq('test')
       end
 
-      it 'should returns nil if the item does not exist' do
+      it 'should return nil if the item does not exist' do
         expect(test_client.get_item(table_name: table_name, key: {test_client.hash_key_attr => "abc"}).item).to eq(nil)
       end
 
@@ -114,6 +114,23 @@ describe Dynamini::TestClient do
 
       it 'should return nil when only supplied range key' do
         expect(test_client.get_item(table_name: table_name, key: {test_client.range_key_attr => 'def'}).item).to eq(nil)
+      end
+    end
+
+    context 'hash key is not handled' do
+      let(:test_client) { Dynamini::TestClient.new(:hash_key_name) }
+      context 'getting a record by integer when hash key is string' do
+        it 'should not find the item' do
+          test_client.update_item(table_name: table_name, key: {test_client.hash_key_attr => '123'}, attribute_updates: {test_attr: {value: 'test', action: 'PUT'}})
+          expect(test_client.get_item(table_name: table_name, key: {test_client.range_key_attr => 123}).item).to eq(nil)
+        end
+      end
+
+      context 'getting a record by string when hash key is integer' do
+        it 'should not find the item' do
+          test_client.update_item(table_name: table_name, key: {test_client.hash_key_attr => 123}, attribute_updates: {test_attr: {value: 'test', action: 'PUT'}})
+          expect(test_client.get_item(table_name: table_name, key: {test_client.range_key_attr => '123'}).item).to eq(nil)
+        end
       end
     end
   end

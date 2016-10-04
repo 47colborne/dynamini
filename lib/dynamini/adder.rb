@@ -6,7 +6,7 @@ module Dynamini
     def add_to(attribute, value)
       complain_about(attribute) unless handles[attribute]
       old_value = read_attribute(attribute)
-      add_value = attribute_callback(Dynamini::TypeHandler::SETTER_PROCS, handles[attribute], value)
+      add_value = self.class.attribute_callback(TypeHandler::SETTER_PROCS, handles[attribute], value)
       if ADDABLE_TYPES.include? handles[attribute][:format]
         @attributes[attribute] ? @attributes[attribute] += add_value : @attributes[attribute] = add_value
       else

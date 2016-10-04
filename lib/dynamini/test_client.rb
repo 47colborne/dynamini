@@ -55,8 +55,6 @@ module Dynamini
       table[hash_key_value] ? table[hash_key_value].merge!(updates) : table[hash_key_value] = updates
     end
 
-
-
     def get_item(args = {})
       table = get_table(args[:table_name])
 

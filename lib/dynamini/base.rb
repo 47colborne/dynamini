@@ -14,10 +14,10 @@ module Dynamini
     extend ActiveModel::Callbacks
     extend Dynamini::BatchOperations
     extend Dynamini::Querying
+    extend Dynamini::TypeHandler
     include Dynamini::ClientInterface
     include Dynamini::Dirty
     include Dynamini::Increment
-    include Dynamini::TypeHandler
     include Dynamini::Adder
 
     attr_reader :attributes
@@ -42,12 +42,14 @@ module Dynamini
         @table_name = name
       end
 
-      def set_hash_key(key)
+      def set_hash_key(key, format = nil)
         @hash_key = key
+        handle(key, format) if format
       end
 
-      def set_range_key(key)
+      def set_range_key(key, format = nil)
         @range_key = key
+        handle(key, format) if format
       end
 
       def set_secondary_index(index_name, args)
@@ -168,8 +170,9 @@ module Dynamini
     end
 
     def self.create_key_hash(hash_value, range_value = nil)
-      key_hash = {self.hash_key => hash_value}
-      key_hash[self.range_key] = range_value if self.range_key
+
+      key_hash = {self.hash_key => handled_key(self.hash_key, hash_value)}
+      key_hash[self.range_key] = handled_key(self.range_key, range_value) if self.range_key
       key_hash
     end
 
@@ -211,8 +214,8 @@ module Dynamini
 
     def write_attribute(attribute, new_value, change: true, **options)
       old_value = read_attribute(attribute)
-      if (handle = handles[attribute.to_sym]) && !new_value.nil?
-        new_value = attribute_callback(SETTER_PROCS, handle, new_value)
+      if (handle = self.class.handles[attribute.to_sym]) && !new_value.nil?
+        new_value = self.class.attribute_callback(TypeHandler::SETTER_PROCS, handle, new_value)
       end
       @attributes[attribute] = new_value
       record_change(attribute, old_value, new_value, options[:action]) if change && new_value != old_value
@@ -220,9 +223,9 @@ module Dynamini
 
     def read_attribute(name)
       value = @attributes[name]
-      if (handle = handles[name.to_sym])
+      if (handle = self.class.handles[name.to_sym])
         value = handle[:options][:default] if value.nil?
-        value = attribute_callback(GETTER_PROCS, handle, value) unless value.nil?
+        value = self.class.attribute_callback(TypeHandler::GETTER_PROCS, handle, value) unless value.nil?
       end
       value
     end

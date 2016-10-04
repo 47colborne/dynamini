@@ -30,6 +30,8 @@ module Dynamini
 
     define_model_callbacks :save
 
+    alias :read_attribute_for_serialization :send
+
     class << self
 
       attr_reader :range_key, :secondary_index

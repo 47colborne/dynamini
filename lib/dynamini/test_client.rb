@@ -82,18 +82,26 @@ module Dynamini
       OpenStruct.new(responses: responses)
     end
 
-    # TODO add range key support
+    # TODO add range key support for delete, not currently implemented batch_operations.batch_delete
     def batch_write_item(request_options)
       request_options[:request_items].each do |table_name, requests|
+        table = get_table(table_name)
+
         requests.each do |request_hash|
           if request_hash[:put_request]
             item = request_hash[:put_request][:item]
-            key = item[hash_key_attr.to_s]
-            get_table(table_name)[key] = item
+            hash_key_value = item[hash_key_attr.to_s]
+            if range_key_attr.present?
+              range_key_value = item[range_key_attr.to_s]
+              table[hash_key_value] = {} if table[hash_key_value].nil?
+              table[hash_key_value][range_key_value] = item
+            else
+              table[hash_key_value] = item
+            end
           else
             item = request_hash[:delete_request][:key]
             id = item[hash_key_attr]
-            get_table(table_name).delete(id)
+            table.delete(id)
           end
         end
       end

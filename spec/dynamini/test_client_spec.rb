@@ -367,41 +367,82 @@ describe Dynamini::TestClient do
   end
 
   describe '#batch_write_item' do
-    let(:test_client) { Dynamini::TestClient.new(:id) }
+    context 'with only hash key' do
+      let(:test_client) { Dynamini::TestClient.new(:id) }
 
-    it 'should store all items in the table correctly' do
-      item1 = {'foo' => 'bar', 'id' => 1}
-      item2 = {'foo' => 'bar', 'id' => 2}
-      put_requests = [{put_request: {item: item1}},
-                      {put_request: {item: item2}}]
+      it 'should store all items in the table correctly' do
+        item1 = {'foo' => 'bar', 'id' => 1}
+        item2 = {'foo' => 'bar', 'id' => 2}
+        put_requests = [{put_request: {item: item1}},
+                        {put_request: {item: item2}}]
 
-      request_options = {request_items: {table_name => put_requests}}
+        request_options = {request_items: {table_name => put_requests}}
 
-      test_client.batch_write_item(request_options)
-      expect(test_client.data[table_name][1]).to eq(item1)
-      expect(test_client.data[table_name][2]).to eq(item2)
-    end
-
-    context 'batch deleting' do
-      before do
-        test_client.data[table_name] = {}
-        test_client.data[table_name]['one'] = {name: 'item1'}
-        test_client.data[table_name]['two'] = {name: 'item2'}
+        test_client.batch_write_item(request_options)
+        expect(test_client.data[table_name][1]).to eq(item1)
+        expect(test_client.data[table_name][2]).to eq(item2)
       end
 
-      it 'should remove all items from the table' do
+      context 'batch deleting' do
+        before do
+          test_client.data[table_name] = {}
+          test_client.data[table_name]['one'] = {name: 'item1'}
+          test_client.data[table_name]['two'] = {name: 'item2'}
+        end
 
-        delete_requests = [
-                            {delete_request: {key: {id: 'one'}}},
-                            {delete_request: {key: {id: 'two'}}}
-                          ]
+        it 'should remove all items from the table' do
 
-        request_options = {request_items: {table_name => delete_requests}}
-        expect(test_client.data[table_name]['one']).to eq({name: 'item1'})
-        expect(test_client.data[table_name]['two']).to eq({name: 'item2'})
-        test_client.batch_write_item(request_options)
-        expect(test_client.data[table_name]['one']).to be_nil
-        expect(test_client.data[table_name]['two']).to be_nil
+          delete_requests = [
+              {delete_request: {key: {id: 'one'}}},
+              {delete_request: {key: {id: 'two'}}}
+          ]
+
+          request_options = {request_items: {table_name => delete_requests}}
+          expect(test_client.data[table_name]['one']).to eq({name: 'item1'})
+          expect(test_client.data[table_name]['two']).to eq({name: 'item2'})
+          test_client.batch_write_item(request_options)
+          expect(test_client.data[table_name]['one']).to be_nil
+          expect(test_client.data[table_name]['two']).to be_nil
+        end
+      end
+    end
+
+    context 'with hash key and range key' do
+      let(:test_client) { Dynamini::TestClient.new(:hash_key, :range_key) }
+
+      context 'executing put requests' do
+        it 'should store all items in the table correctly' do
+          item1 = {'foo' => 'bar', 'hash_key' => 1, 'range_key' => 'a'}
+          item2 = {'foo' => 'bar', 'hash_key' => 2, 'range_key' => 'b'}
+          put_requests = [{put_request: {item: item1}},
+                          {put_request: {item: item2}}]
+
+          request_options = {request_items: {table_name => put_requests}}
+
+          test_client.batch_write_item(request_options)
+          expect(test_client.data[table_name][1]['a']).to eq(item1)
+          expect(test_client.data[table_name][2]['b']).to eq(item2)
+        end
+
+        it 'should add a new record to the hash key if it is a new range key' do
+          item1 = {'foo' => 'bar', 'hash_key' => 1, 'range_key' => 'a'}
+          item2 = {'foo' => 'bar', 'hash_key' => 1, 'range_key' => 'b'}
+
+          put_requests1 = [{put_request: {item: item1}}]
+          request_options1 = {request_items: {table_name => put_requests1}}
+
+          put_requests2 = [{put_request: {item: item2}}]
+          request_options2 = {request_items: {table_name => put_requests2}}
+
+          test_client.batch_write_item(request_options1)
+          test_client.batch_write_item(request_options2)
+          expect(test_client.data[table_name][1]['a']).to eq(item1)
+          expect(test_client.data[table_name][1]['b']).to eq(item2)
+        end
+      end
+
+      context 'executing delete requests' do
+
       end
     end
   end

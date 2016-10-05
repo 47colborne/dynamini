@@ -379,8 +379,8 @@ describe Dynamini::TestClient do
         request_options = {request_items: {table_name => put_requests}}
 
         test_client.batch_write_item(request_options)
-        expect(test_client.data[table_name][1]).to eq(item1)
-        expect(test_client.data[table_name][2]).to eq(item2)
+        expect(test_client.data[table_name][1]).to eq({foo: 'bar', id: 1})
+        expect(test_client.data[table_name][2]).to eq({foo: 'bar', id: 2})
       end
 
       context 'batch deleting' do
@@ -420,8 +420,8 @@ describe Dynamini::TestClient do
           request_options = {request_items: {table_name => put_requests}}
 
           test_client.batch_write_item(request_options)
-          expect(test_client.data[table_name][1]['a']).to eq(item1)
-          expect(test_client.data[table_name][2]['b']).to eq(item2)
+          expect(test_client.data[table_name][1]['a']).to eq({foo: 'bar', hash_key: 1, range_key: 'a'})
+          expect(test_client.data[table_name][2]['b']).to eq({foo: 'bar', hash_key: 2, range_key: 'b'})
         end
 
         it 'should add a new record to the hash key if it is a new range key' do
@@ -436,8 +436,8 @@ describe Dynamini::TestClient do
 
           test_client.batch_write_item(request_options1)
           test_client.batch_write_item(request_options2)
-          expect(test_client.data[table_name][1]['a']).to eq(item1)
-          expect(test_client.data[table_name][1]['b']).to eq(item2)
+          expect(test_client.data[table_name][1]['a']).to eq({foo: 'bar', hash_key: 1, range_key: 'a'})
+          expect(test_client.data[table_name][1]['b']).to eq({foo: 'bar', hash_key: 1, range_key: 'b'})
         end
       end
 

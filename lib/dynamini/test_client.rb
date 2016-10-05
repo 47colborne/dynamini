@@ -89,10 +89,10 @@ module Dynamini
 
         requests.each do |request_hash|
           if request_hash[:put_request]
-            item = request_hash[:put_request][:item]
-            hash_key_value = item[hash_key_attr.to_s]
+            item = request_hash[:put_request][:item].symbolize_keys
+            hash_key_value = item[hash_key_attr]
             if range_key_attr.present?
-              range_key_value = item[range_key_attr.to_s]
+              range_key_value = item[range_key_attr]
               table[hash_key_value] = {} if table[hash_key_value].nil?
               table[hash_key_value][range_key_value] = item
             else
@@ -106,6 +106,7 @@ module Dynamini
         end
       end
     end
+
 
     def delete_item(args = {})
       get_table(args[:table_name]).delete(args[:key][hash_key_attr])

@@ -73,6 +73,8 @@ module Dynamini
 
       args[:request_items].each do |table_name, get_request|
         responses[table_name] = []
+        ids = get_request[:keys].flat_map(&:values)
+        raise 'Aws::DynamoDB::Errors::ValidationException: Provided list of item keys contains duplicates' if ids.length != ids.uniq.length
         get_request[:keys].each do |key_hash|
           item = get_table(table_name)[key_hash.values.first]
           responses[table_name] << item unless item.nil?

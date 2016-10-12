@@ -75,9 +75,14 @@ describe Dynamini::BatchOperations do
     end
 
     context 'when requesting over 100 items' do
-      let(:ids) { Array.new(50, 'foo') +  Array.new(51, '4321')}
+      let(:ids) do
+        i =* (1..101)
+        i.map(&:to_s)
+      end
+
       before do
-        Dynamini::Base.create(id: '4321')
+        i =* (1..51)
+        i.each { |id| Dynamini::Base.create(id: id.to_s) }
       end
 
       it 'should call dynamo once for each 100 items' do

@@ -115,13 +115,13 @@ class Vehicle < Dynamini::Base
     handle :other_array, :array
 end
 
-car = Vehicle.new(vin: 'H3LL0')
+car = Vehicle.create(vin: 'H3LL0')
 car.parts
 > []
 
 car.parts = ['wheel']
 car.parts
-> :wheel
+> [:wheel]
 
 car.parts = ['wheel', 'brakes', 'seat']
 car.parts

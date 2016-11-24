@@ -7,7 +7,8 @@ describe Dynamini::Querying do
       name: 'Widget',
       price: 9.99,
       id: 'abcd1234',
-      hash_key: '009'
+      hash_key: '009',
+      my_attrib: 'hello'
     }
   }
 
@@ -52,6 +53,19 @@ describe Dynamini::Querying do
         expect{ Dynamini::Base.find('') }.to raise_error ArgumentError
         expect{ Dynamini::Base.find([]) }.to raise_error ArgumentError
         expect{ Dynamini::Base.find() }.to raise_error ArgumentError
+      end
+    end
+
+    context 'when the record has invalid data types for its handles' do
+      class SetHandler < Dynamini::Base
+        set_hash_key :id
+      end
+
+      it 'loads the record' do
+        SetHandler.create!(id: '1', attrib: 'hello')
+        SetHandler.handle(:attrib, :set)
+        found = SetHandler.find('1')
+        expect(found.id).to eq('1')
       end
     end
 

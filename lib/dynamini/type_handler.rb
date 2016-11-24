@@ -9,8 +9,8 @@ module Dynamini
         symbol:   proc { |v| v.to_sym },
         string:   proc { |v| v.to_s },
         boolean:  proc { |v| v },
-        array:    proc { |v| v.to_a },
-        set:      proc { |v| Set.new(v) }
+        array:    proc { |v| v.is_a?(Enumerable) ? v.to_a : [v] },
+        set:      proc { |v| v.is_a?(Enumerable) ? Set.new(v) : Set.new([v]) }
     }
 
     SETTER_PROCS = {
@@ -21,8 +21,8 @@ module Dynamini
         string:   proc { |v| v.to_s },
         boolean:  proc { |v| v },
         date:     proc { |v| v.to_time.to_f },
-        array:    proc { |v| v.to_a },
-        set:      proc { |v| Set.new(v) }
+        array:    proc { |v| v.is_a?(Enumerable) ? v.to_a : [v] },
+        set:      proc { |v| v.is_a?(Enumerable) ? Set.new(v) : Set.new([v]) }
     }
 
     def handle(column, format_class, options = {})
@@ -73,19 +73,19 @@ module Dynamini
     end
 
     def handled_key(column, value)
-      if handle = handles[column]
-        attribute_callback(GETTER_PROCS, handle, value)
+      if handles[column]
+        attribute_callback(GETTER_PROCS, handles[column], value, false)
       else
         value
       end
     end
 
-    def attribute_callback(procs, handle, value)
+    def attribute_callback(procs, handle, value, validate)
       callback = procs[handle[:format]]
       if should_convert_elements?(handle, value)
         result = convert_elements(value, procs[handle[:options][:of]])
         callback.call(result)
-      elsif invalid_enumerable_value?(handle, value)
+      elsif validate && invalid_enumerable_value?(handle, value)
         raise ArgumentError, "Can't write a non-enumerable value to field handled as #{handle[:format]}"
       else
         callback.call(value)

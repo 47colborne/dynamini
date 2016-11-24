@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    dynamini (2.6.8)
+    dynamini (2.7.0)
       activemodel (>= 3, < 5.0)
       aws-sdk (~> 2)
 
@@ -101,4 +101,4 @@ DEPENDENCIES
   rspec (~> 3)
 
 BUNDLED WITH
-   1.12.5
+   1.13.6

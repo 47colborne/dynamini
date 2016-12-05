@@ -115,39 +115,6 @@ describe Dynamini::Base do
       end
     end
 
-    describe '#assign_attributes' do
-      it 'should return nil' do
-        expect(model.assign_attributes(price: '5')).to be_nil
-      end
-
-      it 'should update the attributes of the model' do
-        model.assign_attributes(price: '5')
-        expect(model.attributes[:price]).to eq('5')
-      end
-
-      it 'should append changed attributes to @changed' do
-        model.assign_attributes(name: 'Widget', price: '5')
-        expect(model.changed).to eq ['price']
-      end
-    end
-
-    describe '#update_attribute' do
-
-      it 'should update the attribute and save the object' do
-        expect(model).to receive(:save!)
-        model.update_attribute(:name, 'Widget 2.0')
-        expect(model.name).to eq('Widget 2.0')
-      end
-    end
-
-    describe '#update_attributes' do
-      it 'should update multiple attributes and save the object' do
-        expect(model).to receive(:save!)
-        model.update_attributes(name: 'Widget 2.0', price: '12.00')
-        expect(model.attributes).to include(name: 'Widget 2.0', price: '12.00')
-      end
-    end
-
     describe '#save' do
       it 'should run before and after save callbacks' do
         expect_any_instance_of(TestClassWithCallbacks).to receive(:before_callback)
@@ -412,127 +379,60 @@ describe Dynamini::Base do
   end
 
 
-  describe 'attributes' do
-    describe '#attributes' do
-      it 'should return all attributes of the object' do
-        expect(model.attributes).to include model_attributes
-      end
+  describe '#new_record?' do
+    it 'should return true for a new record' do
+      expect(Dynamini::Base.new).to be_truthy
     end
-
-    describe '#new_record?' do
-      it 'should return true for a new record' do
-        expect(Dynamini::Base.new).to be_truthy
-      end
-      it 'should return false for a retrieved record' do
-        expect(Dynamini::Base.find('abcd1234').new_record?).to be_falsey
-      end
-      it 'should return false after a new record is saved' do
-        expect(model.new_record?).to be_falsey
-      end
+    it 'should return false for a retrieved record' do
+      expect(Dynamini::Base.find('abcd1234').new_record?).to be_falsey
     end
-
-    describe 'reader method' do
-      it { is_expected.to respond_to(:price) }
-      it { is_expected.not_to respond_to(:foo) }
-
-      context 'existing attribute' do
-        it 'should return the attribute' do
-          expect(model.price).to eq(9.99)
-        end
-      end
-
-      context 'new attribute' do
-        before { model.description = 'test model' }
-        it 'should return the attribute' do
-          expect(model.description).to eq('test model')
-        end
-      end
-
-      context 'nonexistent attribute' do
-        it 'should return nil' do
-          expect(subject.foo).to be_nil
-        end
-      end
-
-      context 'attribute set to nil' do
-        before { model.price = nil }
-        it 'should return nil' do
-          expect(model.price).to be_nil
-        end
-      end
+    it 'should return false after a new record is saved' do
+      expect(model.new_record?).to be_falsey
     end
+  end
 
-    describe 'writer method' do
-      it { is_expected.to respond_to(:baz=) }
 
-      context 'existing attribute' do
-        before { model.price = '1' }
-        it 'should overwrite the attribute' do
-          expect(model.price).to eq('1')
-        end
-      end
-      context 'new attribute' do
-        before { model.foo = 'bar' }
-        it 'should write to the attribute' do
-          expect(model.foo).to eq('bar')
-        end
-      end
 
-      context 'arrays' do
-        it 'should write to the attribute and switch type freely' do
-          model.foo = ['bar', 'baz']
-          expect(model.foo).to eq(['bar', 'baz'])
-          model.foo = ['quux']
-          expect(model.foo).to eq(['quux'])
-          model.foo = 'zort'
-          expect(model.foo).to eq('zort')
-          model.foo = []
-          expect(model.foo).to eq([])
-        end
-      end
-    end
+  describe '#key' do
+    context 'when using hash key only' do
 
-    describe '#key' do
-      context 'when using hash key only' do
-
-        before do
-          class TestClass < Dynamini::Base
-            set_hash_key :foo
-          end
-        end
-
-        it 'should return an hash containing only the hash_key name and value' do
-          expect(TestClass.new(foo: 2).send(:key)).to eq(foo: 2)
-        end
-      end
-      context 'when using both hash_key and range_key' do
-        it 'should return an hash containing only the hash_key name and value' do
-          key_hash = TestClassWithRange.new(foo: 2, bar: 2015).send(:key)
-          expect(key_hash).to eq(foo: 2, bar: 2015)
-        end
-      end
-    end
-
-    describe '#set_secondary_index' do
-      it 'should return an hash containing only the hash_key and range_key name and value when setting a global secondary index' do
+      before do
         class TestClass < Dynamini::Base
           set_hash_key :foo
-          set_range_key :bar
-          set_secondary_index :git_baz, hash_key: :git, range_key: :baz
         end
-
-        expect(TestClass.secondary_index['git_baz']).to eq(hash_key_name: :git, range_key_name: :baz)
       end
 
-      it 'should return an hash containing only the hash_key and range_key name and value when setting a local secondary index' do
-        class TestClass < Dynamini::Base
-          set_hash_key :foo
-          set_range_key :bar
-          set_secondary_index :foo_baz, range_key: :baz
-        end
-
-        expect(TestClass.secondary_index['foo_baz']).to eq(hash_key_name: :foo, range_key_name: :baz)
+      it 'should return an hash containing only the hash_key name and value' do
+        expect(TestClass.new(foo: 2).send(:key)).to eq(foo: 2)
       end
+    end
+    context 'when using both hash_key and range_key' do
+      it 'should return an hash containing only the hash_key name and value' do
+        key_hash = TestClassWithRange.new(foo: 2, bar: 2015).send(:key)
+        expect(key_hash).to eq(foo: 2, bar: 2015)
+      end
+    end
+  end
+
+  describe '#set_secondary_index' do
+    it 'should return an hash containing only the hash_key and range_key name and value when setting a global secondary index' do
+      class TestClass < Dynamini::Base
+        set_hash_key :foo
+        set_range_key :bar
+        set_secondary_index :git_baz, hash_key: :git, range_key: :baz
+      end
+
+      expect(TestClass.secondary_index['git_baz']).to eq(hash_key_name: :git, range_key_name: :baz)
+    end
+
+    it 'should return an hash containing only the hash_key and range_key name and value when setting a local secondary index' do
+      class TestClass < Dynamini::Base
+        set_hash_key :foo
+        set_range_key :bar
+        set_secondary_index :foo_baz, range_key: :baz
+      end
+
+      expect(TestClass.secondary_index['foo_baz']).to eq(hash_key_name: :foo, range_key_name: :baz)
     end
   end
 end

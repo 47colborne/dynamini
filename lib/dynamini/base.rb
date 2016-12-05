@@ -4,7 +4,7 @@ require_relative 'client_interface'
 require_relative 'dirty'
 require_relative 'increment'
 require_relative 'type_handler'
-require_relative 'adder'
+require_relative 'attributes'
 require_relative 'errors'
 
 module Dynamini
@@ -18,9 +18,8 @@ module Dynamini
     include Dynamini::ClientInterface
     include Dynamini::Dirty
     include Dynamini::Increment
-    include Dynamini::Adder
+    include Dynamini::Attributes
 
-    attr_reader :attributes
     class_attribute :handles
 
     self.handles = {
@@ -93,23 +92,6 @@ module Dynamini
       hash_key == other.hash_key if other.is_a?(self.class)
     end
 
-    def assign_attributes(attributes)
-      attributes.each do |key, value|
-        write_attribute(key, value)
-      end
-      nil
-    end
-
-    def update_attribute(key, value, options = {})
-      write_attribute(key, value)
-      save!(options)
-    end
-
-    def update_attributes(attributes, options = {})
-      assign_attributes(attributes)
-      save!(options)
-    end
-
     def save(options = {})
       run_callbacks :save do
         @changes.empty? || (valid? && trigger_save(options))
@@ -175,60 +157,6 @@ module Dynamini
       key_hash = {self.hash_key => handled_key(self.hash_key, hash_value)}
       key_hash[self.range_key] = handled_key(self.range_key, range_value) if self.range_key
       key_hash
-    end
-
-    def attribute_updates
-      changes.reduce({}) do |updates, (key, value)|
-        current_value = value[1]
-        updates[key] = { value: current_value, action: value[2] || 'PUT' }
-        updates
-      end
-    end
-
-    def method_missing(name, *args, &block)
-      if write_method?(name)
-        write_attribute(attribute_name(name), args.first)
-      elsif was_method?(name)
-        __was(name)
-      elsif read_method?(name)
-        read_attribute(name)
-      else
-        super
-      end
-    end
-
-    def attribute_name(name)
-      name[0..-2].to_sym
-    end
-
-    def read_method?(name)
-      name =~ /^([a-zA-Z][-_\w]*)[^=?]*$/
-    end
-
-    def write_method?(name)
-      name =~ /^([a-zA-Z][-_\w]*)=.*$/
-    end
-
-    def respond_to_missing?(name, include_private = false)
-      @attributes.keys.include?(name) || write_method?(name) || was_method?(name) || super
-    end
-
-    def write_attribute(attribute, new_value, change: true, **options)
-      old_value = read_attribute(attribute)
-      if (handle = self.class.handles[attribute.to_sym]) && !new_value.nil?
-        new_value = self.class.attribute_callback(TypeHandler::SETTER_PROCS, handle, new_value, change)
-      end
-      @attributes[attribute] = new_value
-      record_change(attribute, old_value, new_value, options[:action]) if change && new_value != old_value
-    end
-
-    def read_attribute(name)
-      value = @attributes[name]
-      if (handle = self.class.handles[name.to_sym])
-        value = handle[:options][:default] if value.nil?
-        value = self.class.attribute_callback(TypeHandler::GETTER_PROCS, handle, value, false) unless value.nil?
-      end
-      value
     end
   end
 end

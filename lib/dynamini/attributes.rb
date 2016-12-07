@@ -55,7 +55,6 @@ module Dynamini
       changes.reduce({}) do |updates, (key, value)|
         current_value = value[1]
         updates[key] = { action: value[2] || 'PUT' }
-        binding.pry
         updates[key][:value] = current_value unless current_value == DELETED_TOKEN
         updates
       end

@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    dynamini (2.7.4)
+    dynamini (2.7.5)
       activemodel (>= 3, < 5.0)
       aws-sdk (~> 2)
 
@@ -17,12 +17,14 @@ GEM
       minitest (~> 5.1)
       thread_safe (~> 0.3, >= 0.3.4)
       tzinfo (~> 1.1)
-    aws-sdk (2.6.6)
-      aws-sdk-resources (= 2.6.6)
-    aws-sdk-core (2.6.6)
+    aws-sdk (2.6.28)
+      aws-sdk-resources (= 2.6.28)
+    aws-sdk-core (2.6.28)
+      aws-sigv4 (~> 1.0)
       jmespath (~> 1.0)
-    aws-sdk-resources (2.6.6)
-      aws-sdk-core (= 2.6.6)
+    aws-sdk-resources (2.6.28)
+      aws-sdk-core (= 2.6.28)
+    aws-sigv4 (1.0.0)
     builder (3.2.2)
     coderay (1.1.0)
     diff-lcs (1.2.5)
@@ -56,7 +58,7 @@ GEM
       rb-inotify (>= 0.9)
     lumberjack (1.0.9)
     method_source (0.8.2)
-    minitest (5.9.1)
+    minitest (5.10.1)
     nenv (0.2.0)
     notiffany (0.0.8)
       nenv (~> 0.1)

@@ -139,14 +139,15 @@ describe Dynamini::Attributes do
       end
 
       it 'should remove the attribute from the in-memory attributes' do
-        model.delete_attribute('stuff')
+        model.delete_attribute(:stuff)
         expect(model.attributes.keys).to_not include('stuff')
       end
     end
 
     context 'the attribute does not exist' do
-      it 'does nothing' do
-        model.delete_attribute('non-existent')
+      it 'does not enqueue a change' do
+        model.delete_attribute(:nonexistent)
+        expect(model.changes.keys).to_not include('nonexistent')
       end
     end
   end

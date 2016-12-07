@@ -37,9 +37,11 @@ module Dynamini
     end
 
     def delete_attribute(attribute)
-      old_value = read_attribute(attribute)
-      record_change(attribute, old_value, DELETED_TOKEN, 'DELETE')
-      @attributes.delete(attribute)
+      if @attributes[attribute]
+        old_value = read_attribute(attribute)
+        record_change(attribute, old_value, DELETED_TOKEN, 'DELETE')
+        @attributes.delete(attribute)
+      end
     end
 
     def delete_attribute!(attribute)

@@ -54,7 +54,9 @@ module Dynamini
     def attribute_updates
       changes.reduce({}) do |updates, (key, value)|
         current_value = value[1]
-        updates[key] = { value: current_value, action: value[2] || 'PUT' }
+        updates[key] = { action: value[2] || 'PUT' }
+        binding.pry
+        updates[key][:value] = current_value unless current_value == DELETED_TOKEN
         updates
       end
     end

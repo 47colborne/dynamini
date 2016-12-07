@@ -136,6 +136,7 @@ describe Dynamini::Attributes do
       it 'should enqueue a DELETE change for that attribute' do
         model.delete_attribute(:stuff)
         expect(model.changes['stuff']).to eq([model_attributes[:stuff], Dynamini::Attributes::DELETED_TOKEN, 'DELETE'])
+        expect(model.send(:attribute_updates)['stuff'].keys).to_not include(:value)
       end
 
       it 'should remove the attribute from the in-memory attributes' do

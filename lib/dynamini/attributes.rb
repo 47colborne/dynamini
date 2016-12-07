@@ -2,6 +2,7 @@ module Dynamini
   module Attributes
 
     ADDABLE_TYPES = [:set, :array, :integer, :float, :time, :date]
+    DELETED_TOKEN = '__deleted__'
 
     attr_reader :attributes
 
@@ -33,6 +34,17 @@ module Dynamini
       end
       record_change(attribute, old_value, add_value, 'ADD')
       self
+    end
+
+    def delete_attribute(attribute)
+      old_value = read_attribute(attribute)
+      record_change(attribute, old_value, DELETED_TOKEN, 'DELETE')
+      @attributes.delete(attribute)
+    end
+
+    def delete_attribute!(attribute)
+      delete_attribute(attribute)
+      save!
     end
 
     private

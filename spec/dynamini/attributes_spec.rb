@@ -131,6 +131,26 @@ describe Dynamini::Attributes do
     end
   end
 
+  describe '#delete_attribute' do
+    context 'the attribute exists' do
+      it 'should enqueue a DELETE change for that attribute' do
+        model.delete_attribute(:stuff)
+        expect(model.changes['stuff']).to eq([model_attributes[:stuff], Dynamini::Attributes::DELETED_TOKEN, 'DELETE'])
+      end
+
+      it 'should remove the attribute from the in-memory attributes' do
+        model.delete_attribute('stuff')
+        expect(model.attributes.keys).to_not include('stuff')
+      end
+    end
+
+    context 'the attribute does not exist' do
+      it 'does nothing' do
+        model.delete_attribute('non-existent')
+      end
+    end
+  end
+
   describe '.add_to' do
     context 'a change exists for the given attribute' do
       it 'should overwrite the change with a change that adds to the previously set value' do

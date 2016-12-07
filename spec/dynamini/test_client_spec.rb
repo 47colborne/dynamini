@@ -33,6 +33,13 @@ describe Dynamini::TestClient do
         test_client.update_item(table_name: table_name, key: {hash_key_name: 'hash_key_value'}, attribute_updates: {abc: {value: Set.new([2]), action: 'ADD'}})
         expect(test_client.data[table_name]['hash_key_value']).to eq(abc: Set.new([1, 2]), hash_key_name: 'hash_key_value')
       end
+
+      it 'DELETEs attributes' do
+        test_client = Dynamini::TestClient.new(:hash_key_name)
+        test_client.update_item(table_name: table_name, key: {hash_key_name: 'hash_key_value'}, attribute_updates: {abc: {value: 1, action: 'PUT'}})
+        test_client.update_item(table_name: table_name, key: {hash_key_name: 'hash_key_value'}, attribute_updates: {abc: {action: 'DELETE'}})
+        expect(test_client.data[table_name]['hash_key_value']).to eq(hash_key_name: 'hash_key_value')
+      end
     end
 
     context 'with Hash key and range key' do

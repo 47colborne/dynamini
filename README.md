@@ -40,10 +40,12 @@ Instance methods:
 We've included ActiveModel::Validations, so any validators will still work and be triggered by the save/create methods.
 There are also some new functions specific to DynamoDB's API:
 
-* find_or_nil(hash_key, range_key) - since ActiveRecord's find_by isn't applicable to noSQL, use this method if you want a .find that doesn't raise exceptions when the item doesn't exist 
+* find_or_nil(hash_key, range_key) - since ActiveRecord's find_by isn't applicable to noSQL, use this method if you want a .find that doesn't raise exceptions when the item doesn't exist
 * batch_find([keys]) - to retrieve multiple objects at once.
 * increment!({attribute1: amount, attribute2: amount}) - to update your record using DynamoDB's Atomic Counter functionality. (For more information, see http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/WorkingWithItems.html#WorkingWithItems.AtomicCounters )
 * add_to(attribute, value) - If you use this to modify your attribute, when saving, Dynamini will update that attribute with ADD instead of PUT. Your attribute must be handled as an addable type - :integer, :float, :array, :set, :date, or :time. (For more information on ADD actions, see http://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_UpdateItem.html )
+* delete_attribute(attribute) - Use this to delete an attribute from a record completely, rather than just blanking it or nullifying it.
+* delete_attribute!(attrubute) - same as above but with an included save!
 
 ## Configuration
 In application.rb, or in initializers/dynamini.rb, include your AWS settings like so:
@@ -65,7 +67,7 @@ class Vehicle < Dynamini::Base
     set_table_name 'cars-dev' # must match the table name configured in AWS
     set_hash_key :model       # defaults to :id if not set
     set_range_key :vin        # must be set if your AWS table is configured with a range key
-    
+
     # ...All the rest of your class methods, instance methods, and validators
 end
 ```
@@ -111,7 +113,7 @@ You can save arrays and sets to your Dynamini model. Optionally, you can have Dy
 ```ruby
 class Vehicle < Dynamini::Base
     set_hash_key :vin
-    handle :parts, :array, of: :symbol # :of accepts all types except :set and :array 
+    handle :parts, :array, of: :symbol # :of accepts all types except :set and :array
     handle :other_array, :array
 end
 

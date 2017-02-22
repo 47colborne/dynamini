@@ -98,7 +98,16 @@ module Dynamini
         new_value = self.class.attribute_callback(TypeHandler::SETTER_PROCS, handle, new_value, change)
       end
       @attributes[attribute] = new_value
-      record_change(attribute, old_value, new_value, options[:action]) if change && new_value != old_value
+      if change && new_value != old_value
+        @original_values ||= {}
+        @original_values[attribute] = old_value unless @original_values.keys.include?(attribute)
+        if new_value == @original_values[attribute]
+          clear_change(attribute)
+        else
+          record_change(attribute, old_value, new_value, options[:action])
+        end
+      end
+
     end
 
     def read_attribute(name)

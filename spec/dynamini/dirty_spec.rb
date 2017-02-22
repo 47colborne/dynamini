@@ -140,6 +140,25 @@ describe Dynamini::Dirty do
       end
     end
 
+    context 'attribute changed then changed back' do
+      context 'when old value was present' do
+        it 'should not count as a change' do
+          old_price = model.price
+          model.price = nil
+          model.price = old_price
+          expect(model.changes).to eq({})
+        end
+      end
+
+      context 'when old value was nil' do
+        it 'should not count as a change' do
+          model.new_attr = 'hello'
+          model.new_attr = nil
+          expect(model.changes).to eq({})
+        end
+      end
+    end
+
     context 'attribute changed with ADD action' do
 
       class AddModel < Dynamini::Base

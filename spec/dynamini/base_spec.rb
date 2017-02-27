@@ -360,6 +360,14 @@ describe Dynamini::Base do
         expect(existing_model.created_at.to_s).to_not eq(time.to_s)
       end
     end
+
+    context 'a record with changes present' do
+      it 'should reset @original_values' do
+        model = Dynamini::Base.create(id: '6789')
+        model.save
+        expect(model.instance_variable_get(:@original_values)).to be_empty
+      end
+    end
   end
 
   describe 'table config' do

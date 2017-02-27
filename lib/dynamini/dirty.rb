@@ -34,6 +34,7 @@ module Dynamini
 
     def clear_changes
       @changes = Hash.new { |hash, key| hash[key] = Array.new(2) }
+      @original_values = {}
     end
 
     def was_method?(name)

@@ -3,12 +3,12 @@ require 'ostruct'
 module Dynamini
   module BatchOperations
 
-    def import(models)
+    def import(models, options = {})
       # Max batch size is 25, per Dynamo BatchWriteItem docs
 
       models.each_slice(25) do |batch|
         batch.each do |model|
-          model.send(:generate_timestamps!)
+          model.send(:generate_timestamps!) unless options[:skip_timestamps]
         end
         dynamo_batch_save(batch)
       end

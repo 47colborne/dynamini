@@ -28,6 +28,18 @@ describe Dynamini::BatchOperations do
       expect(subject.find(model2.id).created_at).not_to be_nil
     end
 
+    it 'should not generate timestamps if skip_timestamp flag is passed' do
+      model1 = Dynamini::Base.new(model_attributes)
+      model2 = Dynamini::Base.new(model_attributes.merge(id: '2'))
+
+      subject.import([model1, model2], skip_timestamps: true)
+
+      expect(subject.find(model1.id).updated_at).to be_nil
+      expect(subject.find(model1.id).created_at).to be_nil
+      expect(subject.find(model2.id).updated_at).to be_nil
+      expect(subject.find(model2.id).created_at).to be_nil
+    end
+
     it 'should call .dynamo_batch_save with batches of 25 models' do
       models = Array.new(30, model)
       expect(subject).to receive(:dynamo_batch_save).with(array_including(models[0..24])).ordered

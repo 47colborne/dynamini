@@ -198,6 +198,38 @@ DailyWeather.query(hash_key: "Toronto", scan_index_forward: false)
 > [C, B, A]
 ```
 
+## Batch Saving
+Dynamo allows batch saving, see: http://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchWriteItem.html
+
+```ruby
+class Product < Dynamini::Base
+    set_hash_key :upc
+end
+
+model1 = Product.new({upc: 'abc', name: 'model1'})
+model2 = Product.new({upc: 'xyz', name: 'model2'})
+
+Product.import([model1, model2])
+
+Product.find('abc').name
+> 'model1'
+
+model3 = Product.new({upc: 'qwerty', name: 'model3'}, skip_timestamps: true)
+
+Product.import([model3], skip_timestamps: true)
+
+Product.find('qwerty').name
+> 'model3'
+
+Product.find('qwerty').created_at
+> nil
+
+Product.find('qwerty').updated_at
+> nil
+
+````
+
+
 ## Testing
 We've included an optional in-memory test client, so you don't necessarily have to connect to a real Dynamo instance when running tests. You could also use this in your development environment if you don't have a real Dynamo instance yet, but the data saved to it won't persist through a server restart.
 

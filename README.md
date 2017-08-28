@@ -52,7 +52,7 @@ In application.rb, or in initializers/dynamini.rb, include your AWS settings lik
 
 ```ruby
 Dynamini.configure do |config|
-  config.aws_region = '[AWS region containing your DynamoDB instance]'
+  config.region = '[AWS region containing your DynamoDB instance]'
   config.access_key_id = '[access_key_id for your AWS account]'
   config.secret_access_key = '[secret_access_key for your AWS account]'
 end

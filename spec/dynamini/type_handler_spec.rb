@@ -3,7 +3,7 @@ require 'spec_helper'
 describe Dynamini::TypeHandler do
   describe '.handle' do
 
-    class HandledClass < Dynamini::Base;
+    class HandledClass < Dynamini::Base
     end
 
     context 'when reading the handled attirubte' do
@@ -65,6 +65,33 @@ describe Dynamini::TypeHandler do
     expect(handle_model.attributes[:start_date]).to be_a(Float)
     expect(handle_model.attributes[:start_date] > 1_000_000_000).to be_truthy
     expect(handle_model.start_date).to be_a(Time)
+  end
+
+  context 'Time.zone is not available' do
+    it 'should retrieve stored times using Time.at' do
+      handle_model.start_date = Time.now
+      expect(Time).to receive(:at)
+      handle_model.start_date
+    end
+  end
+
+  context 'Time.zone is available (e.g. ActiveSupport is present)' do
+    before do
+      Time.instance_eval do
+        def zone
+          Time
+        end
+      end
+    end
+
+    after do
+      Time.instance_eval {undef :zone}
+    end
+    it 'should retrieve stored times using Time.zone.at' do
+      handle_model.start_date = Time.now
+      expect(Time).to receive(:zone).and_call_original
+      handle_model.start_date
+    end
   end
 
   it 'should reject bad data' do

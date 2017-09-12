@@ -156,6 +156,7 @@ Query takes the following arguments:
 * :end (optional)
 * :limit (optional)
 * :scan_index_forward (optional - set to false to sort by range key in desc order)
+* :index_name (to query a secondary index - see below)
 
 Here's how you'd use it to find daily temperature data for a given city, selecting for specific date ranges:
 
@@ -197,9 +198,64 @@ DailyWeather.query(hash_key: "Toronto", limit: 2)
 DailyWeather.query(hash_key: "Toronto", scan_index_forward: false)
 > [C, B, A]
 ```
+  
+## Table Scans
+Table scanning is a very expensive operation, and should not be undertaken without a good understanding of the read/write costs. As such, Dynamini doesn't implement the traditional ActiveRecord collection methods like .all or .where. Instead, you can .scan, which has an interface much closer to DynamoDB's native SDK method.
+
+The following options are supported:
+
+* consistent_read (default: false)
+* start_key (hash key of first desired item, default will scan from beginning)
+* index_name (if scanning a secondary index - see below)
+* limit
+
+These two options are to support paralellization of table scanning, see: http://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Scan.html
+* segment
+* total_segments
+
+```ruby
+products_page_one = Product.scan(limit: 100)
+products_page_one.found # [product, product...]
+page_two = Product.scan(start_key: products_page_one.last_evaluated_key)
+```
+
+## Secondary Indices
+To define a secondary index (so that you can .scan it or .query it), you can list them at the top of your Dynamini subclass. The index names have to match the names you've set up through the DynamoDB console. If your secondary index uses a range key, specify it here as well.
+
+```ruby
+class Comment < Dynamini::Base
+    set_hash_key :id
+    set_range_key :comment_date
+    set_secondary_index :score_index
+    set_secondary_index :popularity_index, range_key: :popularity
+end
+```
+For more information on how and why to use secondary indices, see http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/SecondaryIndexes.html
+## Testing
+We've included an optional in-memory test client, so you don't necessarily have to connect to a real Dynamo instance when running tests. You could also use this in your development environment if you don't have a real Dynamo instance yet, but the data saved to it won't persist through a server restart.
+
+To activate this feature, just require the testing module:
+```ruby
+require 'dynamini/testing'
+```
+This module replaces all API calls Dynamini makes to AWS DynamoDB with calls to Dynamini::TestClient.
+
+The test client will not reset its database unless you tell it to, like so:
+```ruby
+Vehicle.client.reset
+```
+
+So, for instance, to get Rspec working with your test suite the way your ActiveRecord model behaved, add these lines to your spec_helper.rb:
+```ruby
+require 'dynamini/testing'
+
+config.after(:each) {
+  Vehicle.client.reset # Large test suites will be very slow and unpredictable otherwise!
+}
+```
 
 ## Batch Saving
-Dynamo allows batch saving, see: http://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchWriteItem.html
+Dynamini implements DynamoDB's batch write operation, mapped to the .import method you might be used to from ActiveRecord. http://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_BatchWriteItem.html
 
 ```ruby
 class Product < Dynamini::Base
@@ -228,30 +284,6 @@ Product.find('qwerty').updated_at
 > nil
 
 ````
-
-
-## Testing
-We've included an optional in-memory test client, so you don't necessarily have to connect to a real Dynamo instance when running tests. You could also use this in your development environment if you don't have a real Dynamo instance yet, but the data saved to it won't persist through a server restart.
-
-To activate this feature, just require the testing module:
-```ruby
-require 'dynamini/testing'
-```
-This module replaces all API calls Dynamini makes to AWS DynamoDB with calls to Dynamini::TestClient.
-
-The test client will not reset its database unless you tell it to, like so:
-```ruby
-Vehicle.client.reset
-```
-
-So, for instance, to get Rspec working with your test suite the way your ActiveRecord model behaved, add these lines to your spec_helper.rb:
-```ruby
-require 'dynamini/testing'
-
-config.after(:each) {
-  Vehicle.client.reset # Large test suites will be very slow and unpredictable otherwise!
-}
-```
 
 ## Things to remember
 * Since DynamoDB is schemaless, your model will respond to any method that looks like a reader, meaning model.foo will return nil.

@@ -126,5 +126,90 @@ describe Dynamini::BatchOperations do
       expect{ Dynamini::Base.find('7890') }.to raise_error(Dynamini::RecordNotFound)
     end
   end
+
+  class SecBase < Dynamini::Base
+    set_hash_key :id
+    set_secondary_index :sec, hash_key: :sec
+    set_secondary_index :rev, hash_key: :sec
+  end
+
+  describe '.scan' do
+
+    before do
+      SecBase.create(id: '123', sec: 'D')
+      SecBase.create(id: '124', sec: 'C')
+      SecBase.create(id: '125', sec: 'B')
+      SecBase.create(id: '126', sec: 'A')
+    end
+
+    context 'scanning the primary key' do
+      context 'with an exclusive_start_key' do
+        context 'with a limit' do
+          it 'retrieves the correct items' do
+            response = SecBase.scan(exclusive_start_key: '124', limit: 1)
+            expect(response.items.map { |i| i.id }).to eq(['124'])
+            expect(response.last_evaluated_key).to eq('124')
+          end
+        end
+        context 'without a limit' do
+          it 'retrieves the correct items' do
+            response = SecBase.scan(exclusive_start_key: '124')
+            expect(response.items.map { |i| i.id }).to eq(%w(124 125 126))
+            expect(response.last_evaluated_key).to eq('126')
+          end
+        end
+      end
+      context 'without an exclusive_start_key' do
+        context 'with a limit' do
+          it 'retrieves the correct items' do
+            response = SecBase.scan(limit: 2)
+            expect(response.items.map { |i| i.id }).to eq(%w(123 124))
+            expect(response.last_evaluated_key).to eq('124')
+          end
+        end
+        context 'without a limit' do
+          it 'retrieves the correct items' do
+            response = SecBase.scan
+            expect(response.items.map { |i| i.id }).to eq(%w(123 124 125 126))
+            expect(response.last_evaluated_key).to eq('126')
+          end
+        end
+      end
+    end
+    context 'scanning a secondary index' do
+      context 'with an exclusive_start_key' do
+        context 'with a limit' do
+          it 'retrieves the correct items' do
+            response = SecBase.scan(index_name: 'sec', exclusive_start_key: 'B', limit: 2)
+            expect(response.items.map { |i| i.sec }).to eq(%w(B C))
+            expect(response.last_evaluated_key).to eq('C')
+          end
+        end
+        context 'without a limit' do
+          it 'retrieves the correct items' do
+            response = SecBase.scan(index_name: 'sec', exclusive_start_key: 'B')
+            expect(response.items.map { |i| i.sec }).to eq(%w(B C D))
+            expect(response.last_evaluated_key).to eq('D')
+          end
+        end
+      end
+      context 'without an exclusive_start_key' do
+        context 'with a limit' do
+          it 'retrieves the correct items' do
+            response = SecBase.scan(index_name: 'sec', limit: 3)
+            expect(response.items.map { |i| i.sec }).to eq(%w(A B C))
+            expect(response.last_evaluated_key).to eq('C')
+          end
+        end
+        context 'without a limit' do
+          it 'retrieves the correct items' do
+            response = SecBase.scan(index_name: 'sec')
+            expect(response.items.map { |i| i.sec }).to eq(%w(A B C D))
+            expect(response.last_evaluated_key).to eq('D')
+          end
+        end
+      end
+    end
+  end
 end
 

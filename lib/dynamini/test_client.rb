@@ -84,6 +84,56 @@ module Dynamini
       OpenStruct.new(responses: responses)
     end
 
+    def scan(args = {})
+      records = get_table(args[:table_name]).values
+
+      sort_scanned_records!(records, args[:secondary_index_name]) if args[:secondary_index_name]
+      start_index = index_of_start_key(args, records)
+      items = limit_scanned_records(args[:limit], records, start_index)
+      last_evaluated_key = get_last_evaluated_key(args[:secondary_index_name], items)
+      OpenStruct.new(items: items, last_evaluated_key: last_evaluated_key)
+    end
+
+    def sort_scanned_records!(records, secondary_index_name)
+      index = secondary_index[secondary_index_name]
+      records.sort! do |a, b|
+        a[get_secondary_hash_key(index)] <=> b[get_secondary_hash_key(index)]
+      end
+    end
+
+    def index_of_start_key(args, records)
+      if args[:exclusive_start_key]
+        sec_index = secondary_index[args[:secondary_index_name]]
+        start_index = records.index do |r|
+          if sec_index
+            r[get_secondary_hash_key(sec_index)] == args[:exclusive_start_key]
+          else
+            r[hash_key_attr] == args[:exclusive_start_key]
+          end
+        end
+        start_index || -1
+      else
+        0
+      end
+    end
+
+    def limit_scanned_records(limit, records, start_index)
+      end_index = limit ? start_index + limit - 1 : -1
+      records[start_index..end_index]
+    end
+
+    def get_last_evaluated_key(secondary_index_name, items)
+      # TODO should last evaluated key be present if the args[:limit] was reached?
+      # if items.length > records.length
+      index = secondary_index[secondary_index_name]
+      if index
+        { get_secondary_hash_key(index).to_s => items.last[get_secondary_hash_key(index)] }
+      else
+        { hash_key_attr.to_s => items.last[hash_key_attr] }
+      end
+      # end
+    end
+
     # TODO add range key support for delete, not currently implemented batch_operations.batch_delete
     def batch_write_item(request_options)
       request_options[:request_items].each do |table_name, requests|

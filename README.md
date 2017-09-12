@@ -5,6 +5,19 @@ Dynamini is a lightweight DynamoDB interface designed as a drop-in replacement f
 [![Code Climate](https://codeclimate.com/github/47colborne/dynamini/badges/gpa.svg)](https://codeclimate.com/github/47colborne/dynamini)
 [![Gem Version](https://badge.fury.io/rb/dynamini.svg)](https://badge.fury.io/rb/dynamini)
 
+##### Table of Contents  
+- [The Basics](#the-basics)  
+- [Configuration](#configuration)
+- [Datatype Handling](#datatype-handling)
+- [Enumerable Attributes](#enumerable-attributes)
+- [Querying](#querying)
+- [Scanning](#scanning)
+- [Secondary Indices](#secondary-indices)
+- [Batch Saving](#batch-saving)
+- [Testing](#testing)
+- [Things to Remember](#things-to-remember)
+- [Contributing](#contributing)
+      
 ## The Basics
 This gem is designed to provide an ActiveRecord-like interface for Amazon's DynamoDB, making it easy for you to make the switch from a traditional relational DB. Once you've set up your table in the DynamoDB console, and installed and configured Dynamini, the behavior of the following ActiveRecord methods will be preserved:
 
@@ -108,7 +121,7 @@ The following datatypes are supported by handle:
 Booleans and strings don't actually need to be translated, but you can set up defaults for those fields this way.
 The magic fields updated_at and created_at are handled as :time by default.
 
-## Enumerable Support
+## Enumerable Attributes
 You can save arrays and sets to your Dynamini model. Optionally, you can have Dynamini perform type conversion on each element of your enumerable. Here's how it works:
 
 ```ruby
@@ -147,9 +160,11 @@ Please note that changing enumerables in place using mutator methods like << or 
 
 If you want to make changes like this, either clone it then use the assignment operator (e.g. model.array = model.array.dup << 'foo') or call model.mark(:attribute) after mutation and before saving to force Dynamini to write the change.
 
-## Querying With Range Keys
+## Querying
 
-Dynamini includes a query function that's much more narrow than ActiveRecord's where function, since DynamoDB is not automatically optimized for highly flexible read operations. It's designed to retrieve a selection of records that belong to a given hash key but have various range key values. To use .query, your table needs to be configured with a range key, and you need to :handle that range field as a fundamentally numeric type - integer, float, date, or time. If your range key field isn't numeric, you won't be able to .query, but you'll still be able to .find your records normally.
+Dynamini includes a query function that's much more narrow than ActiveRecord's where function, since DynamoDB is not automatically optimized for highly flexible read operations. It's designed to retrieve a selection of records that belong to a given hash key but have various range key values. 
+
+To use .query, your table needs to be configured with a range key, and you need to :handle that range field as a fundamentally numeric type - integer, float, date, or time. If your range key field isn't numeric, you won't be able to .query, but you'll still be able to .find your records normally.
 
 Query takes the following arguments:
 * :hash_key (required)
@@ -200,7 +215,7 @@ DailyWeather.query(hash_key: "Toronto", scan_index_forward: false)
 > [C, B, A]
 ```
   
-## Table Scans
+## Scanning
 Table scanning is a very expensive operation, and should not be undertaken without a good understanding of the read/write costs. As such, Dynamini doesn't implement the traditional ActiveRecord collection methods like .all or .where. Instead, you can .scan, which has an interface much closer to DynamoDB's native SDK method.
 
 The following options are supported:

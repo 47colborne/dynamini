@@ -204,18 +204,27 @@ Table scanning is a very expensive operation, and should not be undertaken witho
 
 The following options are supported:
 
-* consistent_read (default: false)
-* start_key (hash key of first desired item, default will scan from beginning)
-* index_name (if scanning a secondary index - see below)
-* limit
+* :consistent_read (default: false)
+* :start_key (key of first desired item, if unset will scan from beginning)
+* :index_name (if scanning a secondary index - see below)
+* :limit (default: no limit except for AWS chunk size)
+* :segment (for multiprocess scanning)
+* :total_segments (for multiprocess scanning)
 
-These two options are to support paralellization of table scanning, see: http://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Scan.html
-* segment
-* total_segments
+Note that start_key can be either a hash { "AttributeName" => "Value" } or a value literal. If start_key is a literal then the attribute name will be inferred automatically, either being the main hash_key of your model or the key of the secondary index matching the provided index_name. 
+
+For more information about using segment and total_segments for parallelization, see: http://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_Scan.html
+
 
 ```ruby
-products_page_one = Product.scan(limit: 100)
-products_page_one.found # [product, product...]
+products_page_one = Product.scan(limit: 100, start_key: 'abcd')
+
+products_page_one.found 
+> [product, product...]
+
+products_page_one.last_evaluated_key
+> {'id' => 'wxyz'}
+
 page_two = Product.scan(start_key: products_page_one.last_evaluated_key)
 ```
 

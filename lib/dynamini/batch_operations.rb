@@ -36,14 +36,9 @@ module Dynamini
     def scan(options = {})
       validate_scan_options(options)
       response = dynamo_scan(options)
-      if options[:index_name]
-        last_evaluated_key = response.last_evaluated_key[secondary_index[options[:index_name]][:hash_key_name].to_s]
-      else
-        last_evaluated_key = response.last_evaluated_key[hash_key.to_s]
-      end
       OpenStruct.new(
-        last_evaluated_key: last_evaluated_key,
-        items: response.items.map { |i| new(i.symbolize_keys, false) }
+        items: response.items.map { |i| new(i.symbolize_keys, false) },
+        last_evaluated_key: response.last_evaluated_key
       )
     end
 
@@ -72,9 +67,18 @@ module Dynamini
     end
 
     def dynamo_scan(options)
+      if options[:start_key] && !options[:start_key].is_a?(Hash)
+        if options[:index_name]
+          start_key = { options[:index_name].to_s => options[:start_key] }
+        else
+          start_key = { hash_key.to_s => options[:start_key] }
+        end
+      else
+        start_key = options[:start_key]
+      end
       client.scan({
         consistent_read:      options[:consistent_read],
-        exclusive_start_key:  options[:exclusive_start_key],
+        exclusive_start_key:  start_key,
         secondary_index_name: options[:index_name],
         limit:                options[:limit],
         segment:              options[:segment],

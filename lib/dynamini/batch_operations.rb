@@ -72,7 +72,7 @@ module Dynamini
     end
 
     def dynamo_scan(options)
-      response = client.scan(
+      client.scan({
         consistent_read:      options[:consistent_read],
         exclusive_start_key:  options[:exclusive_start_key],
         secondary_index_name: options[:index_name],
@@ -80,7 +80,7 @@ module Dynamini
         segment:              options[:segment],
         total_segments:       options[:total_segments],
         table_name:           table_name
-      )
+      }.select { |_, v| !v.nil? })
     end
 
     def validate_scan_options(options)

@@ -94,7 +94,7 @@ module Dynamini
 
     def write_attribute(attribute, new_value, change: true, **options)
       old_value = read_attribute(attribute)
-      if (handle = self.class.handles[attribute.to_sym]) && !new_value.nil?
+      if (handle = self.class.handles[attribute.to_sym])
         new_value = self.class.attribute_callback(TypeHandler::SETTER_PROCS, handle, new_value, change)
       end
       @attributes[attribute] = new_value

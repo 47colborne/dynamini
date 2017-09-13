@@ -129,6 +129,16 @@ describe Dynamini::Attributes do
         expect(model.foo).to eq([])
       end
     end
+
+    context 'when setting a handled attribute to its current value' do
+      it 'should not detect a change' do
+        Dynamini::Base.handle(:my_set, :set, of: :string)
+        Dynamini::Base.create!(id: '123', my_set: nil)
+        model = Dynamini::Base.find('123')
+        model.my_set = nil
+        expect(model.changes).to be_empty
+      end
+    end
   end
 
   describe '#delete_attribute' do

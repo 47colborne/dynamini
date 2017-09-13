@@ -4,33 +4,35 @@ module Dynamini
   module TypeHandler
 
     GETTER_PROCS = {
-      integer:  proc { |v| v.to_i },
+      integer:  proc { |v| v&.to_i },
       date:     proc do |v|
         if v.is_a?(Date)
           v
-        else
+        elsif v
           Time.methods.include?(:zone) ? Time.zone.at(v).to_date : Time.at(v).to_date
         end
       end,
       time:     proc do |v|
-        Time.methods.include?(:zone) ? Time.zone.at(v.to_f) : Time.at(v.to_f)
+        if v
+          Time.methods.include?(:zone) ? Time.zone.at(v.to_f) : Time.at(v.to_f)
+        end
       end,
-      float:    proc { |v| v.to_f },
-      symbol:   proc { |v| v.to_sym },
-      string:   proc { |v| v.to_s },
+      float:    proc { |v| v&.to_f },
+      symbol:   proc { |v| v&.to_sym },
+      string:   proc { |v| v&.to_s },
       boolean:  proc { |v| v },
       array:    proc { |v| v.is_a?(Enumerable) ? v.to_a : [v] },
       set:      proc { |v| v.is_a?(Enumerable) ? Set.new(v) : Set.new([v]) }
     }.freeze
 
     SETTER_PROCS = {
-      integer:  proc { |v| v.to_i },
+      integer:  proc { |v| v&.to_i },
       time:     proc { |v| (v.is_a?(Date) ? v.to_time : v).to_f },
-      float:    proc { |v| v.to_f },
-      symbol:   proc { |v| v.to_s },
-      string:   proc { |v| v.to_s },
+      float:    proc { |v| v&.to_f },
+      symbol:   proc { |v| v&.to_s },
+      string:   proc { |v| v&.to_s },
       boolean:  proc { |v| v },
-      date:     proc { |v| v.to_time.to_f },
+      date:     proc { |v| v&.to_time.to_f },
       array:    proc { |v| v.is_a?(Enumerable) ? v.to_a : [v] },
       set:      proc { |v| v.is_a?(Enumerable) ? Set.new(v) : Set.new([v]) }
     }.freeze
@@ -91,6 +93,7 @@ module Dynamini
     end
 
     def attribute_callback(procs, handle, value, validate)
+      value = handle[:options][:default] if value.nil?
       callback = procs[handle[:format]]
       if should_convert_elements?(handle, value)
         result = convert_elements(value, procs[handle[:options][:of]])

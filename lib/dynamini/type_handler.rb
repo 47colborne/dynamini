@@ -4,7 +4,7 @@ module Dynamini
   module TypeHandler
 
     GETTER_PROCS = {
-      integer:  proc { |v| v&.to_i },
+      integer:  proc { |v| v.to_i if v },
       date:     proc do |v|
         if v.is_a?(Date)
           v
@@ -17,22 +17,22 @@ module Dynamini
           Time.methods.include?(:zone) ? Time.zone.at(v.to_f) : Time.at(v.to_f)
         end
       end,
-      float:    proc { |v| v&.to_f },
-      symbol:   proc { |v| v&.to_sym },
-      string:   proc { |v| v&.to_s },
+      float:    proc { |v| v.to_f if v },
+      symbol:   proc { |v| v.to_sym if v },
+      string:   proc { |v| v.to_s if v },
       boolean:  proc { |v| v },
       array:    proc { |v| v.is_a?(Enumerable) ? v.to_a : [v] },
       set:      proc { |v| v.is_a?(Enumerable) ? Set.new(v) : Set.new([v]) }
     }.freeze
 
     SETTER_PROCS = {
-      integer:  proc { |v| v&.to_i },
+      integer:  proc { |v| v.to_i if v },
       time:     proc { |v| (v.is_a?(Date) ? v.to_time : v).to_f },
-      float:    proc { |v| v&.to_f },
-      symbol:   proc { |v| v&.to_s },
-      string:   proc { |v| v&.to_s },
+      float:    proc { |v| v.to_f if v },
+      symbol:   proc { |v| v.to_s if v },
+      string:   proc { |v| v.to_s if v },
       boolean:  proc { |v| v },
-      date:     proc { |v| v&.to_time.to_f },
+      date:     proc { |v| v.to_time.to_f if v },
       array:    proc { |v| v.is_a?(Enumerable) ? v.to_a : [v] },
       set:      proc { |v| v.is_a?(Enumerable) ? Set.new(v) : Set.new([v]) }
     }.freeze

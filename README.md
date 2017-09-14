@@ -87,7 +87,7 @@ end
 ```
 
 ## Datatype Handling
-There are a few quirks about how the Dynamo Ruby SDK stores data. It stores numeric values as BigDecimal objects, symbols as strings, and doesn't accept ruby Date or Time objects. To save you from having to convert your data to the correct type before saving and after retrieval, you can use the :handle helper for automatic type conversion. You can also use this to specify default values for your fields. Here's how it works:
+There are a few quirks about how the Dynamo Ruby SDK stores data. It stores numeric values as BigDecimal objects, symbols as strings, and doesn't accept ruby Date or Time objects. To save you from having to convert your data to the correct type before saving and after retrieval, you can use :handle to manage automatic type conversion. This is also where you can specify default values for your attributes. Here's how it works:
 
 ```ruby
 class Vehicle < Dynamini::Base
@@ -98,6 +98,7 @@ end
 car = Vehicle.new(vin: '43H1R')
 car.top_speed
 > 80
+
 car.top_speed = 90
 car.save
 Vehicle.find('43H1R').top_speed
@@ -105,9 +106,7 @@ Vehicle.find('43H1R').top_speed
 # This would return BigDecimal(90) without the handle helper.
 ```
 
-Defaults are optional - without a default, a handled field without a value assigned to it will return nil like any other field.
-
-The following datatypes are supported by handle:
+Dynamini lets you :handle the following types:
 * :integer
 * :float
 * :symbol
@@ -118,8 +117,14 @@ The following datatypes are supported by handle:
 * :array
 * :set
 
-Booleans and strings don't actually need to be translated, but you can set up defaults for those fields this way.
-The magic fields updated_at and created_at are handled as :time by default.
+Default values aren't actually written to the database when saving your instance. Instead, they define what will be returned when reading an unset or nullified attribute. If you don't provide your own default, the "default default" value depends on the specified type:
+
+* array: []
+* set: Set.new
+* all other types: nil
+* attribute not handled: nil
+
+The auto-generated fields updated_at and created_at are intrinsically handled as :time.
 
 ## Enumerable Attributes
 You can save arrays and sets to your Dynamini model. Optionally, you can have Dynamini perform type conversion on each element of your enumerable. Here's how it works:
@@ -288,35 +293,34 @@ Product.find('qwerty').updated_at
 ````
 
 ## Testing
-We've included an optional in-memory test client, so you don't necessarily have to connect to a real Dynamo instance when running tests. You could also use this in your development environment if you don't have a real Dynamo instance yet, but the data saved to it won't persist through a server restart.
-
-To activate this feature, just require the testing module:
+Dynamini includes an in-memory test client, so you don't have to connect to a real Dynamo instance when running tests. To activate this feature, just require the testing module:
 ```ruby
 require 'dynamini/testing'
 ```
-This module replaces all API calls Dynamini makes to AWS DynamoDB with calls to Dynamini::TestClient.
+Requiring the module replaces all API calls Dynamini makes to AWS with calls to Dynamini::TestClient.
 
-The test client will not reset its database unless you tell it to, like so:
+You probably don't want your data to persist between tests, so you'll have to reset the test client to wipe its data:
 ```ruby
+# in this case Vehicle is our Dynamini subclass
 Vehicle.client.reset
 ```
 
-So, for instance, to get Rspec working with your test suite the way your ActiveRecord model behaved, add these lines to your spec_helper.rb:
+Here's an implementation of the above in a typical spec_helper.rb:
 ```ruby
 require 'dynamini/testing'
 
 config.after(:each) {
-  Vehicle.client.reset # Large test suites will be very slow and unpredictable otherwise!
+  Vehicle.client.reset
 }
 ```
 
 ## Things to remember
-* Since DynamoDB is schemaless, your model will respond to any method that looks like a reader, meaning model.foo will return nil.
-* You can also write any arbitrary attribute to your model.
-* Other models in your app cannot have a has_one or has_many relationship with your Dynamini model, since these would require a table scan. Your other models can still use belongs_to.
-* If you change the primary key value on an instance of your model, then resave it, you'll have two copies in your database.
+* Since DynamoDB is schemaless, Dynamini is designed to allow your instance to respond to any method call that looks like an attribute name, even if you've never referenced it before. For instance, model.i_bet_this_will_raise_an_error will return nil.
+* Similarly, you can write any arbitrarily-named attribute to your instance without defining its name or properties beforehand.
+* If you have a model with a foreign key attribute that points to your Dynamini model, you can use Rails' :belongs_to association helper normally.
+* If you change the primary key value on an instance of your model, then resave it, you'll have two records in your database.
 * If you use non-numeric strings for your primary key, remember to change your foreign key columns on related ActiveRecord tables to be string type.
-* You might want to conditionally set the table name for your model based on the Rails.env, enabling separate tables for development and production.
+* If you use separate DynamoDB tables for development and production, use :set_table_name in conjunction with Rails.env to dynamically determine the appropriate table when your class initializes.
 
 ## Contributing
 

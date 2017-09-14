@@ -78,11 +78,19 @@ Here's what a sample model looks like. This one includes a range key - sometimes
 
 ```ruby
 class Vehicle < Dynamini::Base
-    set_table_name 'cars-dev' # must match the table name configured in AWS
+    set_table_name 'cars'     # must match the table name configured in AWS
     set_hash_key :model       # defaults to :id if not set
     set_range_key :vin        # must be set if your AWS table is configured with a range key
 
     # ...All the rest of your class methods, instance methods, and validators
+end
+```
+
+If you don't use set_table_name, Dynamini will try to find a table with the pluralized, downcased class name. For instance, a Dynamini class called PageView would look for a table called 'page_views'. If you use separate DynamoDB tables for development and production, wrap set_table_name in a conditional to determine the appropriate table when your class initializes. In this example, the production table is 'vehicles' and the development table is 'vehicles-dev':
+
+```ruby
+class Vehicle < Dynamini::Base
+    set_table_name 'vehicles-dev' unless Rails.env.production?
 end
 ```
 
@@ -317,10 +325,8 @@ config.after(:each) {
 ## Things to remember
 * Since DynamoDB is schemaless, Dynamini is designed to allow your instance to respond to any method call that looks like an attribute name, even if you've never referenced it before. For instance, model.i_bet_this_will_raise_an_error will return nil.
 * Similarly, you can write any arbitrarily-named attribute to your instance without defining its name or properties beforehand.
-* If you have a model with a foreign key attribute that points to your Dynamini model, you can use Rails' :belongs_to association helper normally.
 * If you change the primary key value on an instance of your model, then resave it, you'll have two records in your database.
-* If you use non-numeric strings for your primary key, remember to change your foreign key columns on related ActiveRecord tables to be string type.
-* If you use separate DynamoDB tables for development and production, use :set_table_name in conjunction with Rails.env to dynamically determine the appropriate table when your class initializes.
+* If you have a model with a foreign key attribute that points to your Dynamini model, you can use Rails' :belongs_to association helper normally. (If you use non-numeric strings for your Dynamini hash key, remember to change your foreign key columns on related ActiveRecord tables to be string type.)
 
 ## Contributing
 

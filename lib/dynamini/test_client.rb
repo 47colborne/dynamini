@@ -103,7 +103,7 @@ module Dynamini
 
     def index_of_start_key(args, records)
       if args[:exclusive_start_key]
-        sec_index = secondary_index[args[:secondary_index_name]]
+        sec_index = secondary_index && secondary_index[args[:secondary_index_name]]
         start_index = records.index do |r|
           if sec_index
             r[get_secondary_hash_key(sec_index)] == args[:exclusive_start_key].values[0]
@@ -111,7 +111,7 @@ module Dynamini
             r[hash_key_attr] == args[:exclusive_start_key].values[0]
           end
         end
-        start_index || -1
+        start_index || 0
       else
         0
       end
@@ -123,7 +123,7 @@ module Dynamini
     end
 
     def get_last_evaluated_key(secondary_index_name, items, records)
-      if items.last != records.last
+      if records.length > 0 && items.last != records.last
         index = secondary_index[secondary_index_name]
         if index
           { get_secondary_hash_key(index).to_s => items.last[get_secondary_hash_key(index)] }

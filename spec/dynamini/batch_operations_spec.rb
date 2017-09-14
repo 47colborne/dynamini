@@ -218,6 +218,12 @@ describe Dynamini::BatchOperations do
         end
       end
     end
+
+    context 'with a model with no secondary indices but with a start key' do
+      it 'behaves' do
+        expect{ Dynamini::Base.scan(start_key: '123') }.to_not raise_error
+      end
+    end
   end
 end
 

@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'dynamini'
-  s.version = '2.9.4'
+  s.version = '2.9.5'
   s.summary = 'DynamoDB interface'
   s.description = 'Lightweight DynamoDB interface gem designed as
                    a drop-in replacement for ActiveRecord.

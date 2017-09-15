@@ -69,7 +69,8 @@ module Dynamini
     def dynamo_scan(options)
       if options[:start_key] && !options[:start_key].is_a?(Hash)
         if options[:index_name]
-          start_key = { options[:index_name].to_s => options[:start_key] }
+          attr = secondary_index[options[:index_name]][:hash_key_name].to_s
+          start_key = { attr => options[:start_key] }
         else
           start_key = { hash_key.to_s => options[:start_key] }
         end
@@ -92,7 +93,7 @@ module Dynamini
         raise ArgumentError, 'Must specify segment if specifying total_segments'
       elsif options[:segment] && !options[:total_segments]
         raise ArgumentError, 'Must specify total_segments if specifying segment'
-      elsif options[:index_name] && !self.secondary_index[options[:index_name]]
+      elsif options[:index_name] && (!self.secondary_index || !self.secondary_index[options[:index_name]])
         raise ArgumentError, "Secondary index of #{options[:index_name]} does not exist"
       end
     end

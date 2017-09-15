@@ -53,7 +53,7 @@ module Dynamini
         handle(key, format) if format
       end
 
-      def set_secondary_index(index_name, args)
+      def set_secondary_index(index_name, args = {})
         @secondary_index ||= {}
         @secondary_index[index_name.to_s] = {hash_key_name: args[:hash_key] || hash_key, range_key_name: args[:range_key]}
       end

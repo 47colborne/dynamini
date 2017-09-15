@@ -470,4 +470,87 @@ describe Dynamini::TestClient do
       expect(result.responses[table_name].first[:id]).to eq('foo')
     end
   end
+
+  class SecBase < Dynamini::Base
+    set_hash_key :id
+    set_secondary_index :sec_index, hash_key: :sec
+  end
+
+  describe '.scan' do
+    before do
+      SecBase.create(id: '123', sec: 'D')
+      SecBase.create(id: '124', sec: 'C')
+      SecBase.create(id: '125', sec: 'B')
+      SecBase.create(id: '126', sec: 'A')
+    end
+
+    context 'scanning the primary key' do
+      context 'with an exclusive_start_key' do
+        context 'with a limit' do
+          it 'retrieves the correct items' do
+            response = SecBase.client.scan(exclusive_start_key: {'id' => '124'}, limit: 1, table_name: 'sec_bases')
+            expect(response.items.map { |i| i[:id] }).to eq(['124'])
+            expect(response.last_evaluated_key).to eq('id' => '124')
+          end
+        end
+        context 'without a limit' do
+          it 'retrieves the correct items' do
+            response = SecBase.client.scan(exclusive_start_key: {'id' => '124'}, table_name: 'sec_bases')
+            expect(response.items.map { |i| i[:id] }).to eq(%w(124 125 126))
+            expect(response.last_evaluated_key).to be_nil
+          end
+        end
+      end
+      context 'without an exclusive_start_key' do
+        context 'with a limit' do
+          it 'retrieves the correct items' do
+            response = SecBase.client.scan(limit: 2, table_name: 'sec_bases')
+            expect(response.items.map { |i| i[:id] }).to eq(%w(123 124))
+            expect(response.last_evaluated_key).to eq('id' => '124')
+          end
+        end
+        context 'without a limit' do
+          it 'retrieves the correct items' do
+            response = SecBase.client.scan(table_name: 'sec_bases')
+            expect(response.items.map { |i| i[:id] }).to eq(%w(123 124 125 126))
+            expect(response.last_evaluated_key).to be_nil
+          end
+        end
+      end
+    end
+    context 'scanning a secondary index' do
+      context 'with an exclusive_start_key' do
+        context 'with a limit' do
+          it 'retrieves the correct items' do
+            response = SecBase.client.scan(secondary_index_name: 'sec_index', exclusive_start_key: {'sec' => 'B'}, limit: 2, table_name: 'sec_bases')
+            expect(response.items.map { |i| i['sec'] }).to eq(%w(B C))
+            expect(response.last_evaluated_key).to eq('sec' => 'C')
+          end
+        end
+        context 'without a limit' do
+          it 'retrieves the correct items' do
+            response = SecBase.client.scan(secondary_index_name: 'sec_index', exclusive_start_key: {'sec' => 'B'}, table_name: 'sec_bases')
+            expect(response.items.map { |i| i['sec'] }).to eq(%w(B C D))
+            expect(response.last_evaluated_key).to be_nil
+          end
+        end
+      end
+      context 'without an exclusive_start_key' do
+        context 'with a limit' do
+          it 'retrieves the correct items' do
+            response = SecBase.client.scan(secondary_index_name: 'sec_index', limit: 3, table_name: 'sec_bases')
+            expect(response.items.map { |i| i['sec'] }).to eq(%w(A B C))
+            expect(response.last_evaluated_key).to eq('sec' => 'C')
+          end
+        end
+        context 'without a limit' do
+          it 'retrieves the correct items' do
+            response = SecBase.client.scan(secondary_index_name: 'sec_index', table_name: 'sec_bases')
+            expect(response.items.map { |i| i['sec'] }).to eq(%w(A B C D))
+            expect(response.last_evaluated_key).to be_nil
+          end
+        end
+      end
+    end
+  end
 end

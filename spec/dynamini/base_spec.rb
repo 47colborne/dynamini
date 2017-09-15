@@ -185,6 +185,40 @@ describe Dynamini::Base do
             model.save
           end
         end
+        context 'when an empty set is submitted' do
+          it 'should nullify the set' do
+            expect(model.class.client).to receive(:update_item).with(
+                table_name: 'bases',
+                key: {id: model_attributes[:id]},
+                attribute_updates: hash_including(
+                    "foo" => {
+                        value: nil,
+                        action: 'PUT'
+                    }
+                )
+            )
+            model.foo = Set.new
+            model.bar = 4
+            model.save
+          end
+        end
+        context 'when a populated set is submitted' do
+          it 'should submit the set' do
+            expect(model.class.client).to receive(:update_item).with(
+                table_name: 'bases',
+                key: {id: model_attributes[:id]},
+                attribute_updates: hash_including(
+                    "foo" => {
+                        value: Set.new([1]),
+                        action: 'PUT'
+                    }
+                )
+            )
+            model.foo = Set.new([1])
+            model.bar = 4
+            model.save
+          end
+        end
       end
 
       context 'when failing validation' do

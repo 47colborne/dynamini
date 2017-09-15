@@ -127,101 +127,82 @@ describe Dynamini::BatchOperations do
     end
   end
 
-  class SecBase < Dynamini::Base
-    set_hash_key :id
-    set_secondary_index :sec, hash_key: :sec
-    set_secondary_index :rev, hash_key: :sec
-  end
-
   describe '.scan' do
+    let(:response) { OpenStruct.new(items: [], last_evaluated_key: {'foo' => 'bar'}) }
 
     before do
-      SecBase.create(id: '123', sec: 'D')
-      SecBase.create(id: '124', sec: 'C')
-      SecBase.create(id: '125', sec: 'B')
-      SecBase.create(id: '126', sec: 'A')
+      subject.set_secondary_index :foo_index, hash_key: :foo_attr
     end
 
-    context 'scanning the primary key' do
-      context 'with an exclusive_start_key' do
-        context 'with a limit' do
-          it 'retrieves the correct items' do
-            response = SecBase.scan(start_key: '124', limit: 1)
-            expect(response.items.map { |i| i.id }).to eq(['124'])
-            expect(response.last_evaluated_key).to eq('id' => '124')
-          end
-        end
-        context 'without a limit' do
-          it 'retrieves the correct items' do
-            response = SecBase.scan(start_key: '124')
-            expect(response.items.map { |i| i.id }).to eq(%w(124 125 126))
-            expect(response.last_evaluated_key).to be_nil
-          end
-        end
+    context 'no start key is provided' do
+      it 'passes the request to the client in the correct shape and returns the correct shape' do
+        expect(subject.client).to receive(:scan).with(
+          consistent_read:      false,
+          secondary_index_name: 'foo_index',
+          limit:                100,
+          segment:              1,
+          total_segments:       2,
+          table_name:           'bases'
+        ).and_return(response)
 
-        context 'the start key is in aws sdk style' do
-          it 'retrieves the correct items' do
-            response = SecBase.scan(start_key: {'id' => '124'}, limit: 2)
-            expect(response.items.map { |i| i.id }).to eq(['124', '125'])
-            expect(response.last_evaluated_key).to eq('id' => '125')
-          end
-        end
-      end
-      context 'without an exclusive_start_key' do
-        context 'with a limit' do
-          it 'retrieves the correct items' do
-            response = SecBase.scan(limit: 2)
-            expect(response.items.map { |i| i.id }).to eq(%w(123 124))
-            expect(response.last_evaluated_key).to eq('id' => '124')
-          end
-        end
-        context 'without a limit' do
-          it 'retrieves the correct items' do
-            response = SecBase.scan
-            expect(response.items.map { |i| i.id }).to eq(%w(123 124 125 126))
-            expect(response.last_evaluated_key).to be_nil
-          end
-        end
+        expect(
+            subject.scan(
+              consistent_read: false,
+              index_name: 'foo_index',
+              limit: 100,
+              segment: 1,
+              total_segments: 2
+            )
+        ).to eq(response)
       end
     end
-    context 'scanning a secondary index' do
-      context 'with an exclusive_start_key' do
-        context 'with a limit' do
-          it 'retrieves the correct items' do
-            response = SecBase.scan(index_name: 'sec', start_key: 'B', limit: 2)
-            expect(response.items.map { |i| i.sec }).to eq(%w(B C))
-            expect(response.last_evaluated_key).to eq('sec' => 'C')
-          end
-        end
-        context 'without a limit' do
-          it 'retrieves the correct items' do
-            response = SecBase.scan(index_name: 'sec', start_key: 'B')
-            expect(response.items.map { |i| i.sec }).to eq(%w(B C D))
-            expect(response.last_evaluated_key).to be_nil
-          end
-        end
-      end
-      context 'without an exclusive_start_key' do
-        context 'with a limit' do
-          it 'retrieves the correct items' do
-            response = SecBase.scan(index_name: 'sec', limit: 3)
-            expect(response.items.map { |i| i.sec }).to eq(%w(A B C))
-            expect(response.last_evaluated_key).to eq('sec' => 'C')
-          end
-        end
-        context 'without a limit' do
-          it 'retrieves the correct items' do
-            response = SecBase.scan(index_name: 'sec')
-            expect(response.items.map { |i| i.sec }).to eq(%w(A B C D))
-            expect(response.last_evaluated_key).to be_nil
-          end
-        end
+    context 'a literal start key is provided' do
+      it 'passes the request to the client in the correct shape and returns the correct shape' do
+        expect(subject.client).to receive(:scan).with(
+          consistent_read:      false,
+          secondary_index_name: 'foo_index',
+          exclusive_start_key:  { 'foo_attr' => 'abc' },
+          limit:                100,
+          segment:              1,
+          total_segments:       2,
+          table_name:           'bases'
+        ).and_return(response)
+
+        expect(subject.scan(
+          consistent_read: false,
+          index_name: 'foo_index',
+          start_key: 'abc',
+          limit: 100,
+          segment: 1,
+          total_segments: 2
+        )).to eq(response)
       end
     end
+    context 'a complex start key is provided' do
+      it 'passes the request to the client in the correct shape and returns the correct shape' do
+        expect(subject.client).to receive(:scan).with(
+            consistent_read:      false,
+            secondary_index_name: 'foo_index',
+            exclusive_start_key:  { 'foo_attr' => 'abc' },
+            limit:                100,
+            segment:              1,
+            total_segments:       2,
+            table_name:           'bases'
+        ).and_return(response)
 
-    context 'with a model with no secondary indices but with a start key' do
-      it 'behaves' do
-        expect{ Dynamini::Base.scan(start_key: '123') }.to_not raise_error
+        expect(subject.scan(
+            consistent_read: false,
+            index_name: 'foo_index',
+            start_key: { 'foo_attr' => 'abc' },
+            limit: 100,
+            segment: 1,
+            total_segments: 2
+        )).to eq(response)
+      end
+      context 'with a model with no secondary indices but with a start key' do
+        it 'behaves' do
+          expect{ Dynamini::Base.scan(start_key: '123') }.to_not raise_error
+        end
       end
     end
   end

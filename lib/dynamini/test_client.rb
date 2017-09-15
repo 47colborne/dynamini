@@ -86,7 +86,6 @@ module Dynamini
 
     def scan(args = {})
       records = get_table(args[:table_name]).values
-
       sort_scanned_records!(records, args[:secondary_index_name]) if args[:secondary_index_name]
       start_index = index_of_start_key(args, records)
       items = limit_scanned_records(args[:limit], records, start_index)

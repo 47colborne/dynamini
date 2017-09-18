@@ -49,6 +49,17 @@ module Dynamini
       save!
     end
 
+    def handled_attributes
+      attributes.each_with_object({}) do |(attribute_name, _value), result|
+        result[attribute_name.to_sym] = send(attribute_name.to_sym)
+      end
+    end
+
+    def inspect
+      attrib_string = handled_attributes.map { |(a, v)| "#{a}: #{v.inspect}" }.join(', ')
+      "#<#{self.class} #{attrib_string}>"
+    end
+
     private
 
     def attribute_updates

@@ -239,4 +239,18 @@ describe Dynamini::Attributes do
       end
     end
   end
+
+  describe '#handled_attributes' do
+    it 'returns a hash of attributes with type conversion applied' do
+      expect(model.handled_attributes).to eq(
+        name: "Widget", price: 9.99, id: "abcd1234", hash_key: "009", things: Set.new([1, 2, 3]), stuff: [4, 5, 6]
+      )
+    end
+  end
+
+  describe '#inspect' do
+    it 'serializes the class name and the handled attributes' do
+      expect(model.inspect).to eq('#<HandledModel name: "Widget", price: 9.99, id: "abcd1234", hash_key: "009", things: #<Set: {1, 2, 3}>, stuff: [4, 5, 6]>')
+    end
+  end
 end

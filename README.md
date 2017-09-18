@@ -134,6 +134,8 @@ Default values aren't actually written to the database when saving your instance
 
 The auto-generated fields updated_at and created_at are intrinsically handled as :time.
 
+If you want to see all your attributes at once, with type conversions applied (e.g for serialization as JSON), call :handled_attributes. The :attributes method, conversely, will show you the real values as written to DynamoDB.
+
 ## Enumerable Attributes
 You can save arrays and sets to your Dynamini model. Optionally, you can have Dynamini perform type conversion on each element of your enumerable. Here's how it works:
 

@@ -28,9 +28,11 @@ module Dynamini
     end
 
     def batch_delete(ids)
-      requests = ids.map{|id| { delete_request: { key: { hash_key => id } } } }
-      options = { request_items: { table_name => requests } }
-      client.batch_write_item(options)
+      deletes = ids.map{ |id| { delete_request: { key: { hash_key => id } } } }
+
+      deletes.each_slice(25) do |slice|
+        client.batch_write_item(request_items: { table_name => slice })
+      end
     end
 
     def scan(options = {})

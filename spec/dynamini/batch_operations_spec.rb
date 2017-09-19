@@ -88,13 +88,12 @@ describe Dynamini::BatchOperations do
 
     context 'when requesting over 100 items' do
       let(:ids) do
-        i =* (1..101)
+        i = *(1..101)
         i.map(&:to_s)
       end
 
       before do
-        i =* (1..51)
-        i.each { |id| Dynamini::Base.create(id: id.to_s) }
+        51.times { |i| Dynamini::Base.create(id: (i + 1).to_s) }
       end
 
       it 'should call dynamo once for each 100 items' do
@@ -119,11 +118,29 @@ describe Dynamini::BatchOperations do
       Dynamini::Base.create(id: '7890')
     end
 
-    it 'should delete all items in collection to the database' do
-      subject.batch_delete(ids)
-      expect{ Dynamini::Base.find('4321') }.to raise_error(Dynamini::RecordNotFound)
-      expect{ Dynamini::Base.find('4567') }.to raise_error(Dynamini::RecordNotFound)
-      expect{ Dynamini::Base.find('7890') }.to raise_error(Dynamini::RecordNotFound)
+    context 'when deleting the max length or under' do
+      it 'should delete all items in collection to the database' do
+        subject.batch_delete(ids)
+        expect{ Dynamini::Base.find('4321') }.to raise_error(Dynamini::RecordNotFound)
+        expect{ Dynamini::Base.find('4567') }.to raise_error(Dynamini::RecordNotFound)
+        expect{ Dynamini::Base.find('7890') }.to raise_error(Dynamini::RecordNotFound)
+      end
+    end
+
+    context 'when deleting more than the max length' do
+      let (:ids) do
+        [
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 4321, 17, 18, 19, 20, 4567, 22, 23, 24, 25,
+            26, 7890
+        ].map{ |id| id.to_s }
+      end
+      it 'invokes the client with each slice' do
+        expect(Dynamini::Base.client).to receive(:batch_write_item).twice.and_call_original
+        subject.batch_delete(ids)
+        expect{ Dynamini::Base.find('4321') }.to raise_error(Dynamini::RecordNotFound)
+        expect{ Dynamini::Base.find('4567') }.to raise_error(Dynamini::RecordNotFound)
+        expect{ Dynamini::Base.find('7890') }.to raise_error(Dynamini::RecordNotFound)
+      end
     end
   end
 

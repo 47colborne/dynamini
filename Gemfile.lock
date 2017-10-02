@@ -1,28 +1,28 @@
 PATH
   remote: .
   specs:
-    dynamini (2.10.1)
+    dynamini (2.10.2)
       activemodel (>= 3, < 5.0)
       aws-sdk (~> 2)
 
 GEM
   remote: https://rubygems.org/
   specs:
-    activemodel (4.2.9)
-      activesupport (= 4.2.9)
+    activemodel (4.2.10)
+      activesupport (= 4.2.10)
       builder (~> 3.1)
-    activesupport (4.2.9)
+    activesupport (4.2.10)
       i18n (~> 0.7)
       minitest (~> 5.1)
       thread_safe (~> 0.3, >= 0.3.4)
       tzinfo (~> 1.1)
-    aws-sdk (2.10.48)
-      aws-sdk-resources (= 2.10.48)
-    aws-sdk-core (2.10.48)
+    aws-sdk (2.10.55)
+      aws-sdk-resources (= 2.10.55)
+    aws-sdk-core (2.10.55)
       aws-sigv4 (~> 1.0)
       jmespath (~> 1.0)
-    aws-sdk-resources (2.10.48)
-      aws-sdk-core (= 2.10.48)
+    aws-sdk-resources (2.10.55)
+      aws-sdk-core (= 2.10.55)
     aws-sigv4 (1.0.2)
     builder (3.2.3)
     coderay (1.1.0)

@@ -18,8 +18,10 @@ describe Dynamini::Querying do
     set_hash_key :foo
     set_range_key :bar
     set_secondary_index :secondary_index, hash_key: :secondary_hash_key, range_key: :secondary_range_key
+    set_secondary_index :tertiary_index, hash_key: :tertiary_hash_key, range_key: :tertiary_range_key
     handle :bar, :integer
     handle :secondary_range_key, :integer
+    handle :tertiary_range_key, :time
   end
 
   describe '.find' do
@@ -268,6 +270,24 @@ describe Dynamini::Querying do
 
       it 'should return no results if none are found with the secondary index' do
         expect(TestClassWithRange.query(hash_key: 'non-existent-key', index_name: :secondary_index)).to eq([])
+      end
+    end
+
+    context 'with a type handled range key' do
+      it 'converts the start and end parameter to the raw type' do
+        start_param = Time.new(2000, 1, 1)
+        end_param =  Time.new(2001, 1, 1)
+
+        expect(TestClassWithRange.client).to receive(:query).with(hash_including(
+            expression_attribute_values: {':h' => '12345', ':s' => start_param.to_f, ':e' => end_param.to_f}
+        )).and_return(OpenStruct.new(items: []))
+
+        TestClassWithRange.query(
+            hash_key: '12345',
+            index_name: :tertiary_index,
+            start: start_param,
+            end: end_param
+        )
       end
     end
   end

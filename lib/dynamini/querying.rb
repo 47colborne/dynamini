@@ -69,10 +69,20 @@ module Dynamini
     end
 
     def build_expression_attribute_values(args)
+      range_key = current_index_range_key(args)
+
+      if (handle = handles[range_key.to_sym])
+        start_val = args[:start] ? attribute_callback(TypeHandler::SETTER_PROCS, handle, args[:start], false) : nil
+        end_val = args[:end] ? attribute_callback(TypeHandler::SETTER_PROCS, handle, args[:end], false) : nil
+      else
+        start_val = args[:start]
+        end_val = args[:end]
+      end
+
       expression_values = {}
       expression_values[':h'] = args[:hash_key]
-      expression_values[':s'] = args[:start] if args[:start]
-      expression_values[':e'] = args[:end] if args[:end]
+      expression_values[':s'] = start_val if start_val
+      expression_values[':e'] = end_val if end_val
       expression_values
     end
 

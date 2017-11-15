@@ -2,7 +2,7 @@ module Dynamini
   module ClientInterface
     module ClassMethods
       def client
-          @client ||= Aws::DynamoDB::Client.new(
+          @@client ||= Aws::DynamoDB::Client.new(
               region: Dynamini.configuration.region,
               access_key_id: Dynamini.configuration.access_key_id,
               secret_access_key: Dynamini.configuration.secret_access_key

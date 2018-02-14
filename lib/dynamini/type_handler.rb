@@ -21,20 +21,20 @@ module Dynamini
       symbol:   proc { |v| v.to_sym if v },
       string:   proc { |v| v.to_s if v },
       boolean:  proc { |v| v },
-      array:    proc { |v| v.is_a?(Enumerable) ? v.to_a : [v] },
-      set:      proc { |v| v.is_a?(Enumerable) ? Set.new(v) : Set.new([v]) }
+      array:    proc { |v| (v.is_a?(Enumerable) ? v.to_a : [v]) if v },
+      set:      proc { |v| (v.is_a?(Enumerable) ? Set.new(v) : Set.new([v])) if v }
     }.freeze
 
     SETTER_PROCS = {
       integer:  proc { |v| v.to_i if v },
-      time:     proc { |v| (v.is_a?(Date) ? v.to_time : v).to_f },
+      time:     proc { |v| (v.is_a?(Date) ? v.to_time : v).to_f if v },
       float:    proc { |v| v.to_f if v },
       symbol:   proc { |v| v.to_s if v },
       string:   proc { |v| v.to_s if v },
       boolean:  proc { |v| v },
       date:     proc { |v| v.to_time.to_f if v },
-      array:    proc { |v| v.is_a?(Enumerable) ? v.to_a : [v] },
-      set:      proc { |v| v.is_a?(Enumerable) ? Set.new(v) : Set.new([v]) }
+      array:    proc { |v| (v.is_a?(Enumerable) ? v.to_a : [v]) if v },
+      set:      proc { |v| (v.is_a?(Enumerable) ? Set.new(v) : Set.new([v])) if v }
     }.freeze
 
     def handle(column, format_class, options = {})

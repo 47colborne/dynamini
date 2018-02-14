@@ -77,7 +77,7 @@ module Dynamini
         write_attribute(attribute_name(name), args.first)
       elsif was_method?(name)
         __was(name)
-      elsif read_method?(name)
+      elsif args.empty? && read_method?(name)
         read_attribute(name)
       else
         super

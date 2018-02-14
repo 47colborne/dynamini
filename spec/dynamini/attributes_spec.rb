@@ -72,6 +72,10 @@ describe Dynamini::Attributes do
       expect(model).not_to respond_to(:foo)
     end
 
+    it 'does not treat method calls with arguments as readers' do
+        expect{ model.accidental_method_call(1,2,3) }.to raise_error NoMethodError
+    end
+
     context 'existing attribute' do
       it 'should return the attribute' do
         expect(model.price).to eq(9.99)

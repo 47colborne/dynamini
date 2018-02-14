@@ -553,4 +553,19 @@ describe Dynamini::TestClient do
       end
     end
   end
+
+  xdescribe 'polymorphism with shared table' do
+    class SuperClass < Dynamini::Base
+      set_table_name 'my_table'
+    end
+
+    class SubClass < SuperClass
+      set_table_name 'my_table'
+    end
+
+    it 'shares the same client' do
+      SuperClass.create!(id: 'abc', foo: 'bar')
+      expect(SubClass.find('abc').foo).to eq('bar')
+    end
+  end
 end

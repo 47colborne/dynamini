@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    dynamini (2.11.1)
+    dynamini (2.12.1)
       activemodel (>= 3, < 5.0)
       aws-sdk (~> 2)
 
@@ -16,13 +16,13 @@ GEM
       minitest (~> 5.1)
       thread_safe (~> 0.3, >= 0.3.4)
       tzinfo (~> 1.1)
-    aws-sdk (2.10.131)
-      aws-sdk-resources (= 2.10.131)
-    aws-sdk-core (2.10.131)
+    aws-sdk (2.11.4)
+      aws-sdk-resources (= 2.11.4)
+    aws-sdk-core (2.11.4)
       aws-sigv4 (~> 1.0)
       jmespath (~> 1.0)
-    aws-sdk-resources (2.10.131)
-      aws-sdk-core (= 2.10.131)
+    aws-sdk-resources (2.11.4)
+      aws-sdk-core (= 2.11.4)
     aws-sigv4 (1.0.2)
     builder (3.2.3)
     coderay (1.1.0)
@@ -103,4 +103,4 @@ DEPENDENCIES
   rspec (~> 3)
 
 BUNDLED WITH
-   1.16.0.pre.2
+   1.16.1

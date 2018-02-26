@@ -259,14 +259,14 @@ page_two = Product.scan(start_key: products_page_one.last_evaluated_key)
 ```
 
 ## Secondary Indices
-To define a secondary index (so that you can .scan or .query it), you can set them at the top of your Dynamini subclass. The index names have to match the names you've set up through the DynamoDB console. If your secondary index uses a range key, specify it here as well.
+To define a secondary index (so that you can .scan or .query it), you can set them at the top of your Dynamini subclass. The index names have to match the names you've set up through the DynamoDB console. You'll need to specify which attribute your index is keyed to, and if your secondary index uses a range key, specify it here as well.
 
 ```ruby
 class Comment < Dynamini::Base
     set_hash_key :id
-    set_range_key :comment_date
-    set_secondary_index :score_index
-    set_secondary_index :popularity_index, range_key: :popularity
+    set_range_key :comment_date # filter comments by date
+    set_secondary_index :score_index, hash_key: :score  # lookup comments by score
+    set_secondary_index :user_index, hash_key: :user_id, range_key: :comment_date # lookup comments by user, filtering by date
 end
 ```
 For more information on how and why to use secondary indices, see http://docs.aws.amazon.com/amazondynamodb/latest/developerguide/SecondaryIndexes.html

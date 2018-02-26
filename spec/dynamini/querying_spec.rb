@@ -154,140 +154,141 @@ describe Dynamini::Querying do
   end
 
   describe '.query' do
-    before do
-      4.times do |i|
-        TestClassWithRange.create(foo: 'foo', bar: i + 1, secondary_hash_key: 'secondary_hash_key', secondary_range_key: 10 - i)
+    context 'class with range key' do
+      before do
+        4.times do |i|
+          TestClassWithRange.create(foo: 'foo', bar: i + 1, secondary_hash_key: 'secondary_hash_key', secondary_range_key: 10 - i)
+        end
+        TestClassWithRange.create(foo: 'foo2', bar: 5, secondary_hash_key: 'secondary_hash_key', secondary_range_key: 6)
       end
-      TestClassWithRange.create(foo: 'foo2', bar: 5, secondary_hash_key: 'secondary_hash_key', secondary_range_key: 6)
-
-    end
-    context 'start value provided' do
-      it 'should return records with a range key greater than or equal to the start value' do
-        records = TestClassWithRange.query(hash_key: 'foo', start: 2)
-        expect(records.length).to eq 3
-        expect(records.first.bar).to eq 2
-        expect(records.last.bar).to eq 4
+      context 'start value provided' do
+        it 'should return records with a range key greater than or equal to the start value' do
+          records = TestClassWithRange.query(hash_key: 'foo', start: 2)
+          expect(records.length).to eq 3
+          expect(records.first.bar).to eq 2
+          expect(records.last.bar).to eq 4
+        end
       end
-    end
-    context 'end value provided' do
-      it 'should return records with a range key less than or equal to the start value' do
-        records = TestClassWithRange.query(hash_key: 'foo', end: 2)
-        expect(records.length).to eq 2
-        expect(records.first.bar).to eq 1
-        expect(records.last.bar).to eq 2
+      context 'end value provided' do
+        it 'should return records with a range key less than or equal to the start value' do
+          records = TestClassWithRange.query(hash_key: 'foo', end: 2)
+          expect(records.length).to eq 2
+          expect(records.first.bar).to eq 1
+          expect(records.last.bar).to eq 2
+        end
       end
-    end
-    context 'start and end values provided' do
-      it 'should return records between the two values inclusive' do
-        records = TestClassWithRange.query(hash_key: 'foo', start: 1, end: 3)
-        expect(records.length).to eq 3
-        expect(records.first.bar).to eq 1
-        expect(records.last.bar).to eq 3
+      context 'start and end values provided' do
+        it 'should return records between the two values inclusive' do
+          records = TestClassWithRange.query(hash_key: 'foo', start: 1, end: 3)
+          expect(records.length).to eq 3
+          expect(records.first.bar).to eq 1
+          expect(records.last.bar).to eq 3
+        end
       end
-    end
-    context 'neither value provided' do
-      it 'should return all records belonging to that hash key' do
-        records = TestClassWithRange.query(hash_key: 'foo')
-        expect(records.length).to eq 4
-        expect(records.first.bar).to eq 1
-        expect(records.last.bar).to eq 4
-      end
-    end
-
-    context 'hash key does not exist' do
-      it 'should return an empty array' do
-        expect(TestClassWithRange.query(hash_key: 'non-existent-key')).to eq([])
-      end
-    end
-
-    context 'when :limit is provided' do
-      it 'should return only the first two records' do
-        records = TestClassWithRange.query(hash_key: 'foo', limit: 2)
-        expect(records.length).to eq 2
-        expect(records.first.bar).to eq 1
-        expect(records.last.bar).to eq 2
-      end
-    end
-
-    context 'when :scan_index_forward is provided' do
-      it 'should return records in order when given true' do
-        records = TestClassWithRange.query(hash_key: 'foo', scan_index_forward: true)
-        expect(records.length).to eq 4
-        expect(records.first.bar).to eq 1
-        expect(records.last.bar).to eq 4
+      context 'neither value provided' do
+        it 'should return all records belonging to that hash key' do
+          records = TestClassWithRange.query(hash_key: 'foo')
+          expect(records.length).to eq 4
+          expect(records.first.bar).to eq 1
+          expect(records.last.bar).to eq 4
+        end
       end
 
-      it 'should return records in reverse order when given false' do
-        records = TestClassWithRange.query(hash_key: 'foo', scan_index_forward: false)
-        expect(records.length).to eq 4
-        expect(records.first.bar).to eq 4
-        expect(records.last.bar).to eq 1
-      end
-    end
-
-    context 'using secondary index' do
-      it 'should be able to query using the secondary index' do
-        records = TestClassWithRange.query(hash_key: 'secondary_hash_key', index_name: :secondary_index)
-        expect(records.length).to eq(5)
-        expect(records.first.secondary_range_key).to eq(6)
-        expect(records.last.secondary_range_key).to eq(10)
+      context 'hash key does not exist' do
+        it 'should return an empty array' do
+          expect(TestClassWithRange.query(hash_key: 'non-existent-key')).to eq([])
+        end
       end
 
-      it 'should be able to sort backwards' do
-        records = TestClassWithRange.query(hash_key: 'secondary_hash_key', index_name: :secondary_index, scan_index_forward: false)
-        expect(records.length).to eq(5)
-        expect(records.first.secondary_range_key).to eq(10)
-        expect(records.last.secondary_range_key).to eq(6)
+      context 'when :limit is provided' do
+        it 'should return only the first two records' do
+          records = TestClassWithRange.query(hash_key: 'foo', limit: 2)
+          expect(records.length).to eq 2
+          expect(records.first.bar).to eq 1
+          expect(records.last.bar).to eq 2
+        end
       end
 
-      it 'should be able to limit number of results' do
-        records = TestClassWithRange.query(hash_key: 'secondary_hash_key', index_name: :secondary_index, limit: 3)
-        expect(records.length).to eq(3)
-        expect(records.first.secondary_range_key).to eq(6)
-        expect(records.last.secondary_range_key).to eq(8)
+      context 'when :scan_index_forward is provided' do
+        it 'should return records in order when given true' do
+          records = TestClassWithRange.query(hash_key: 'foo', scan_index_forward: true)
+          expect(records.length).to eq 4
+          expect(records.first.bar).to eq 1
+          expect(records.last.bar).to eq 4
+        end
+
+        it 'should return records in reverse order when given false' do
+          records = TestClassWithRange.query(hash_key: 'foo', scan_index_forward: false)
+          expect(records.length).to eq 4
+          expect(records.first.bar).to eq 4
+          expect(records.last.bar).to eq 1
+        end
       end
 
-      it 'should be able to give a minimum value for the range key' do
-        records = TestClassWithRange.query(hash_key: 'secondary_hash_key', index_name: :secondary_index, start: 8)
-        expect(records.length).to eq(3)
-        expect(records.first.secondary_range_key).to eq(8)
-        expect(records.last.secondary_range_key).to eq(10)
+      context 'using secondary index' do
+        it 'should be able to query using the secondary index' do
+          records = TestClassWithRange.query(hash_key: 'secondary_hash_key', index_name: :secondary_index)
+          expect(records.length).to eq(5)
+          expect(records.first.secondary_range_key).to eq(6)
+          expect(records.last.secondary_range_key).to eq(10)
+        end
+
+        it 'should be able to sort backwards' do
+          records = TestClassWithRange.query(hash_key: 'secondary_hash_key', index_name: :secondary_index, scan_index_forward: false)
+          expect(records.length).to eq(5)
+          expect(records.first.secondary_range_key).to eq(10)
+          expect(records.last.secondary_range_key).to eq(6)
+        end
+
+        it 'should be able to limit number of results' do
+          records = TestClassWithRange.query(hash_key: 'secondary_hash_key', index_name: :secondary_index, limit: 3)
+          expect(records.length).to eq(3)
+          expect(records.first.secondary_range_key).to eq(6)
+          expect(records.last.secondary_range_key).to eq(8)
+        end
+
+        it 'should be able to give a minimum value for the range key' do
+          records = TestClassWithRange.query(hash_key: 'secondary_hash_key', index_name: :secondary_index, start: 8)
+          expect(records.length).to eq(3)
+          expect(records.first.secondary_range_key).to eq(8)
+          expect(records.last.secondary_range_key).to eq(10)
+        end
+
+        it 'should be able to give a maximum for the range key' do
+          records = TestClassWithRange.query(hash_key: 'secondary_hash_key', index_name: :secondary_index, end: 8)
+          expect(records.length).to eq(3)
+          expect(records.first.secondary_range_key).to eq(6)
+          expect(records.last.secondary_range_key).to eq(8)
+        end
+
+        it 'should be able to give a maximum for the range key' do
+          records = TestClassWithRange.query(hash_key: 'secondary_hash_key', index_name: :secondary_index, start: 7, end: 9)
+          expect(records.length).to eq(3)
+          expect(records.first.secondary_range_key).to eq(7)
+          expect(records.last.secondary_range_key).to eq(9)
+        end
+
+        it 'should return no results if none are found with the secondary index' do
+          expect(TestClassWithRange.query(hash_key: 'non-existent-key', index_name: :secondary_index)).to eq([])
+        end
       end
 
-      it 'should be able to give a maximum for the range key' do
-        records = TestClassWithRange.query(hash_key: 'secondary_hash_key', index_name: :secondary_index, end: 8)
-        expect(records.length).to eq(3)
-        expect(records.first.secondary_range_key).to eq(6)
-        expect(records.last.secondary_range_key).to eq(8)
-      end
+      context 'with a type handled range key' do
+        it 'converts the start and end parameter to the raw type' do
+          start_param = Time.new(2000, 1, 1)
+          end_param =  Time.new(2001, 1, 1)
 
-      it 'should be able to give a maximum for the range key' do
-        records = TestClassWithRange.query(hash_key: 'secondary_hash_key', index_name: :secondary_index, start: 7, end: 9)
-        expect(records.length).to eq(3)
-        expect(records.first.secondary_range_key).to eq(7)
-        expect(records.last.secondary_range_key).to eq(9)
-      end
+          expect(TestClassWithRange.client).to receive(:query).with(hash_including(
+                                                                        expression_attribute_values: {':h' => '12345', ':s' => start_param.to_f, ':e' => end_param.to_f}
+                                                                    )).and_return(OpenStruct.new(items: []))
 
-      it 'should return no results if none are found with the secondary index' do
-        expect(TestClassWithRange.query(hash_key: 'non-existent-key', index_name: :secondary_index)).to eq([])
-      end
-    end
-
-    context 'with a type handled range key' do
-      it 'converts the start and end parameter to the raw type' do
-        start_param = Time.new(2000, 1, 1)
-        end_param =  Time.new(2001, 1, 1)
-
-        expect(TestClassWithRange.client).to receive(:query).with(hash_including(
-            expression_attribute_values: {':h' => '12345', ':s' => start_param.to_f, ':e' => end_param.to_f}
-        )).and_return(OpenStruct.new(items: []))
-
-        TestClassWithRange.query(
-            hash_key: '12345',
-            index_name: :tertiary_index,
-            start: start_param,
-            end: end_param
-        )
+          TestClassWithRange.query(
+              hash_key: '12345',
+              index_name: :tertiary_index,
+              start: start_param,
+              end: end_param
+          )
+        end
       end
     end
   end

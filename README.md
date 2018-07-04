@@ -327,6 +327,7 @@ config.after(:each) {
 ## Things to remember
 * Since DynamoDB is schemaless, Dynamini is designed to allow your instance to respond to any method call that looks like an attribute name, even if you've never referenced it before. For instance, model.i_bet_this_will_raise_an_error will return nil.
 * Similarly, you can write any arbitrarily-named attribute to your instance without defining its name or properties beforehand.
+* Dynamini will attempt to split very large item updates into multiple save operations. However, if a single attribute is not enumerable and is itself larger than AWS's size limit, the update will be rejected.
 * If you change the primary key value on an instance of your model, then resave it, you'll have two records in your database.
 * If you have a model with a foreign key attribute that points to your Dynamini model, you can use Rails' :belongs_to association helper normally. (If you use non-numeric strings for your Dynamini hash key, remember to change your foreign key columns on related ActiveRecord tables to be string type.)
 

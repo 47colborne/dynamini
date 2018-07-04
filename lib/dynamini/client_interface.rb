@@ -10,7 +10,7 @@ module Dynamini
       end
     end
 
-    def save_to_dynamo
+    def save_to_dynamo(attribute_updates)
       self.class.client.update_item(
           table_name: self.class.table_name,
           key: key,

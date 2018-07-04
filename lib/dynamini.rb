@@ -4,6 +4,7 @@ module Dynamini
   require 'dynamini/base'
   require 'dynamini/configuration'
   require 'dynamini/test_client'
+  require 'dynamini/item_splitter'
 
   class << self
     attr_writer :configuration

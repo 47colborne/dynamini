@@ -130,7 +130,10 @@ module Dynamini
 
     def trigger_save(options = {})
       generate_timestamps! unless options[:skip_timestamps]
-      save_to_dynamo
+      updates = ItemSplitter.split(attribute_updates)
+      updates.each do |u|
+        save_to_dynamo(u)
+      end
       clear_changes
       @new_record = false
       true

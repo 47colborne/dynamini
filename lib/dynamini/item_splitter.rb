@@ -15,7 +15,6 @@ module Dynamini
           size = au_size(unprocessed_au[0])
           if size > MAX_SIZE
             part_one, part_two = split_au(unprocessed_au[0])
-            # replace huge attribute with two smaller ones
             unprocessed_au.shift
             unprocessed_au.unshift(part_one)
             unprocessed_au.unshift(part_two)
@@ -27,7 +26,7 @@ module Dynamini
               current_update = []
             else
               current_update_size += size
-              key, value = get_key_and_value(unprocessed_au[0])
+              key, value = key_and_value(unprocessed_au[0])
               current_update[key] = value
               unprocessed_au.shift
             end
@@ -41,7 +40,7 @@ module Dynamini
       private
 
       def au_size(au)
-        0 # FIXME
+        au.to_s.bytesize
       end
 
       def split_au(au)
@@ -57,7 +56,7 @@ module Dynamini
         [part_one, part_two]
       end
 
-      def get_key_and_value(au)
+      def key_and_value(au)
         [au.keys[0], au.values[0]]
       end
     end

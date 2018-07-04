@@ -323,6 +323,7 @@ config.after(:each) {
   Vehicle.client.reset
 }
 ```
+Each of your Dynamini subclasses uses a separate sandboxed TestClient, which can cause some unexpected behavior when testing polymorphic classes that are meant to share the same production table.
 
 ## Things to remember
 * Since DynamoDB is schemaless, Dynamini is designed to allow your instance to respond to any method call that looks like an attribute name, even if you've never referenced it before. For instance, model.i_bet_this_will_raise_an_error will return nil.

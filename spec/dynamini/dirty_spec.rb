@@ -195,4 +195,32 @@ describe Dynamini::Dirty do
       expect(model.changed).to eq(['price', 'name'])
     end
   end
+
+  describe '#assign_transient_attribute' do
+    it 'should update the value without marking a change' do
+      model.assign_transient_attribute(:transient, 'hello')
+      expect(model.transient).to eq('hello')
+      expect(model.changes).to eq({})
+    end
+
+    context 'when going back to the old value' do
+      context 'using assign transient attribute again' do
+        it 'should reset the value without marking a change' do
+          old_price = model.price
+          model.assign_transient_attribute(:price, old_price + 1)
+          model.assign_transient_attribute(:price, old_price)
+          expect(model.changes).to eq({})
+        end
+      end
+
+      context 'using a regular writer' do
+        it 'should reset the value without marking a change' do
+          old_price = model.price
+          model.assign_transient_attribute(:price, old_price + 1)
+          model.price = old_price
+          expect(model.changes).to eq({})
+        end
+      end
+    end
+  end
 end

@@ -110,16 +110,21 @@ module Dynamini
         new_value = self.class.attribute_callback(TypeHandler::SETTER_PROCS, handle, new_value, change)
       end
       @attributes[attribute] = new_value
-      if change && new_value != old_value
-        @original_values ||= {}
-        @original_values[attribute] = old_value unless @original_values.keys.include?(attribute)
-        if new_value == @original_values[attribute]
-          clear_change(attribute)
-        else
-          record_change(attribute, old_value, new_value, options[:action])
-        end
-      end
+      set_original_value(attribute, old_value) if change
+      process_change(attribute, new_value, old_value, options) if change == true && new_value != old_value
+    end
 
+    def process_change(attribute, new_value, old_value, options)
+      if new_value == @original_values[attribute]
+        clear_change(attribute)
+      else
+        record_change(attribute, old_value, new_value, options[:action])
+      end
+    end
+
+    def set_original_value(attribute, old_value)
+      @original_values ||= {}
+      @original_values[attribute] = old_value unless @original_values.keys.include?(attribute)
     end
 
     def read_attribute(name)
@@ -130,5 +135,7 @@ module Dynamini
       end
       value
     end
+
+
   end
 end

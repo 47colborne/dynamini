@@ -21,6 +21,10 @@ module Dynamini
       end
     end
 
+    def assign_transient_attribute(key, value)
+      write_attribute(key, value, change: :transient)
+    end
+
     private
 
     def record_change(attribute, old_value, new_value, action)

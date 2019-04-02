@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'dynamini'
-  s.version = '2.12.3'
+  s.version = '3.0.0'
   s.summary = 'DynamoDB interface'
   s.description = 'Lightweight DynamoDB interface gem designed as
                    a drop-in replacement for ActiveRecord.
@@ -17,8 +17,8 @@ Gem::Specification.new do |s|
   s.test_files = s.files.grep(%r{^(test|spec|features)/})
   s.require_paths = ['lib']
 
-  s.add_dependency('activemodel', ['>= 3', '< 5.0'])
-  s.add_dependency('aws-sdk', '~> 2')
+  s.add_dependency('activemodel', '>= 3')
+  s.add_dependency('aws-sdk-dynamodb', '~> 1')
 
   s.add_development_dependency 'rspec', '~> 3'
   s.add_development_dependency 'pry', '~> 0'

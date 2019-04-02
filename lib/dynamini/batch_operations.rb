@@ -82,7 +82,7 @@ module Dynamini
       client.scan({
         consistent_read:      options[:consistent_read],
         exclusive_start_key:  start_key,
-        secondary_index_name: options[:index_name],
+        index_name:           options[:index_name],
         limit:                options[:limit],
         segment:              options[:segment],
         total_segments:       options[:total_segments],

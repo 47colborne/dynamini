@@ -1,5 +1,5 @@
 ## Dynamini
-Dynamini is a lightweight DynamoDB interface designed as a drop-in replacement for ActiveRecord. This gem powers part of our stack at yroo.com.
+Dynamini is a lightweight DynamoDB interface designed as a drop-in replacement for ActiveRecord.
 
 [![Build Status](https://travis-ci.org/47colborne/dynamini.svg?branch=master)](https://travis-ci.org/47colborne/dynamini)
 [![Code Climate](https://codeclimate.com/github/47colborne/dynamini/badges/gpa.svg)](https://codeclimate.com/github/47colborne/dynamini)

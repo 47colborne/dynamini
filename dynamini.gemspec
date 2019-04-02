@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'dynamini'
-  s.version = '3.0.0'
+  s.version = '3.0.1'
   s.summary = 'DynamoDB interface'
   s.description = 'Lightweight DynamoDB interface gem designed as
                    a drop-in replacement for ActiveRecord.
@@ -22,7 +22,4 @@ Gem::Specification.new do |s|
 
   s.add_development_dependency 'rspec', '~> 3'
   s.add_development_dependency 'pry', '~> 0'
-  s.add_development_dependency 'fuubar', '~> 2'
-  s.add_development_dependency 'guard-rspec'
-  s.add_development_dependency 'guard-shell'
 end

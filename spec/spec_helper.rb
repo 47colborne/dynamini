@@ -1,7 +1,7 @@
 require 'bundler/setup'
 Bundler.setup
 
-require 'aws-sdk'
+require 'aws-sdk-dynamodb'
 require 'pry'
 require 'fuubar'
 require 'dynamini'

@@ -155,7 +155,7 @@ describe Dynamini::BatchOperations do
       it 'passes the request to the client in the correct shape and returns the correct shape' do
         expect(subject.client).to receive(:scan).with(
           consistent_read:      false,
-          secondary_index_name: 'foo_index',
+          index_name: 'foo_index',
           limit:                100,
           segment:              1,
           total_segments:       2,
@@ -177,7 +177,7 @@ describe Dynamini::BatchOperations do
       it 'passes the request to the client in the correct shape and returns the correct shape' do
         expect(subject.client).to receive(:scan).with(
           consistent_read:      false,
-          secondary_index_name: 'foo_index',
+          index_name: 'foo_index',
           exclusive_start_key:  { 'foo_attr' => 'abc' },
           limit:                100,
           segment:              1,
@@ -199,7 +199,7 @@ describe Dynamini::BatchOperations do
       it 'passes the request to the client in the correct shape and returns the correct shape' do
         expect(subject.client).to receive(:scan).with(
             consistent_read:      false,
-            secondary_index_name: 'foo_index',
+            index_name: 'foo_index',
             exclusive_start_key:  { 'foo_attr' => 'abc' },
             limit:                100,
             segment:              1,

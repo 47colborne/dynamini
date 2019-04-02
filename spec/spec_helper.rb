@@ -3,7 +3,6 @@ Bundler.setup
 
 require 'aws-sdk-dynamodb'
 require 'pry'
-require 'fuubar'
 require 'dynamini'
 require 'dynamini/testing'
 

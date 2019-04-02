@@ -1,11 +1,11 @@
 language: ruby
 script: bundle exec rspec
 rvm:
-- 2.0.0
 - 2.3.4
+- 2.5.3
 notifications:
   email:
     recipients:
-      - dev@retailcommon.com
+      - shotsinthedark@gmail.com
     on_success: change
     on_failure: always
